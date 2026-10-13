@@ -6,6 +6,10 @@ Telemetry overlay for **Assetto Corsa EVO**: pedal input graph and bars (clutch,
 
 It reads the game's shared memory directly (`Local\acevo_pmf_physics` / `Local\acevo_pmf_graphics`). No SimHub and nothing to install: it compiles with the .NET Framework that ships with Windows.
 
+> [!IMPORTANT]
+> **The overlay only appears while the car is on track.** It stays hidden in menus, replays, pause, and while the car is parked in the pit box or garage (setup screen). To make it show up: **engage 1st gear and press the throttle** so the car starts moving.
+> If you see nothing after launching the game, that is expected: it is not broken. Start driving and it will appear. It hides again when you stop in the pit box, pause, or leave the session.
+
 ## Download
 
 Grab `EvoHud-v1.0-windows.zip` from the [Releases](../../releases) page, extract it and run `EvoHud.exe`. Keep the `assets` folder next to the `.exe` (it holds the wheel image).

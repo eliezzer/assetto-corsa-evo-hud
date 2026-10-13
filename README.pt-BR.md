@@ -1,10 +1,14 @@
-﻿# EvoHud
+# EvoHud
 
 [English](README.md) · **Português**
 
 Overlay de telemetria para **Assetto Corsa EVO**: gráfico e barras de pedais (embreagem, freio, acelerador) com destaque quando ABS/TC atuam, níveis de ABS/TC/TCC, marcha, velocidade, luzes de troca, volante girando e linha de combustível (atual, consumo por volta e voltas restantes).
 
 Lê a memória compartilhada do jogo (`Local\acevo_pmf_physics` / `Local\acevo_pmf_graphics`) diretamente. Não precisa de SimHub nem de instalar nada: compila com o .NET Framework que já vem no Windows.
+
+> [!IMPORTANT]
+> **O overlay só aparece quando o carro está na pista.** Ele fica escondido nos menus, no replay, na pausa e enquanto o carro está parado no box ou na garagem (tela de setup). Para ele aparecer: **engate a primeira marcha e acelere**, para o carro começar a andar.
+> Se você não vê nada depois de abrir o jogo, isso é esperado: não é defeito. Comece a pilotar e ele aparece. Ele some de novo quando você para no box, pausa ou sai da sessão.
 
 ## Baixar
 
