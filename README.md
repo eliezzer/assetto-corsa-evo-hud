@@ -1,50 +1,62 @@
 # EvoHud
 
-Overlay de telemetria para **Assetto Corsa EVO**: gráfico e barras de pedais (embreagem, freio, acelerador) com destaque quando ABS/TC atuam, níveis de ABS/TC/TCC, marcha, velocidade, luzes de troca, volante girando e linha de combustível (atual, consumo por volta e voltas restantes).
+**English** · [Português](README.pt-BR.md)
 
-Lê a memória compartilhada do jogo (`Local\acevo_pmf_physics` / `Local\acevo_pmf_graphics`) diretamente. Não precisa de SimHub nem de instalar nada: compila com o .NET Framework que já vem no Windows.
+Telemetry overlay for **Assetto Corsa EVO**: pedal input graph and bars (clutch, brake, throttle) that highlight when ABS/TC cut in, ABS/TC/TCC levels, gear, speed, shift lights, a rotating steering wheel and a fuel row (current fuel, consumption per lap, laps remaining).
 
-## Usar
+It reads the game's shared memory directly (`Local\acevo_pmf_physics` / `Local\acevo_pmf_graphics`). No SimHub and nothing to install: it compiles with the .NET Framework that ships with Windows.
 
-1. Rode `EvoHud.exe` (a pasta `assets` precisa estar ao lado dele).
-2. O jogo deve estar em **janela** ou **tela cheia sem bordas**.
-3. O HUD aparece só enquanto você está pilotando. Some em menus, replay, pausa, parado no box (setup) e quando o jogo não está em primeiro plano.
-4. Ícone "E" na bandeja do sistema (perto do relógio), clique direito:
-   - **Unlock / Lock position**: destrava para arrastar (também `Ctrl+Shift+L` ou duplo clique no ícone).
+## Download
+
+Grab `EvoHud-v1.0-windows.zip` from the [Releases](../../releases) page, extract it and run `EvoHud.exe`. Keep the `assets` folder next to the `.exe` (it holds the wheel image).
+
+## Use
+
+1. Run `EvoHud.exe`.
+2. The game must run in **windowed** or **borderless** mode. Overlays can't draw over exclusive fullscreen.
+3. The HUD only shows while you are driving. It hides in menus, replays, pause, while parked in the pit box (setup screen) and when the game is not the foreground window.
+4. A red "E" icon appears in the system tray (next to the clock). Right-click it for:
+   - **Unlock / Lock position**: unlock to drag the HUD (also `Ctrl+Shift+L`, or double-click the tray icon).
    - **Reset position**, **Demo mode**, **Hide when not driving**, **Quit**.
 
-## Configurar
+To start it with Windows, put a shortcut to `EvoHud.exe` in the Startup folder (`Win+R`, then `shell:startup`).
 
-`settings.ini` é criado ao lado do `.exe` (edite com o app fechado):
+## Configure
 
-| Chave | Padrão | O que faz |
+`settings.ini` is created next to the `.exe` (edit it while the app is closed):
+
+| Key | Default | What it does |
 |---|---|---|
-| `Scale` | `1.0` | Tamanho do HUD |
-| `Opacity` | `0.94` | Transparência |
-| `Wheel` | `assets\wheel.png` | Imagem do volante (PNG quadrado, fundo transparente, centralizado) |
-| `InvertSteer` | `0` | Inverte o giro do volante |
-| `ColorClutch` / `ColorBrake` / `ColorThrottle` | azul / vermelho / verde | Cores dos pedais |
-| `ColorAbs` / `ColorTc` | laranja / amarelo | Cor quando ABS/TC atuam |
-| `ColorShiftA` / `ColorShiftB` | vermelho / apagado | Pisca de troca de marcha |
-| `ShowGraph`, `ShowBars`, `ShowClutch`, `ShowGear`, `ShowWheel`, `ShowFuel`, `AidColors` | `1` | Liga/desliga partes do HUD |
-| `AutoHide`, `HideInPitBox`, `HideWhenGameNotFocused` | `1` | Regras de esconder |
+| `Scale` | `1.0` | HUD size |
+| `Opacity` | `0.94` | Transparency |
+| `Wheel` | `assets\wheel.png` | Wheel image (square PNG, transparent background, centered) |
+| `InvertSteer` | `0` | Reverses the wheel rotation |
+| `ColorClutch` / `ColorBrake` / `ColorThrottle` | blue / red / green | Pedal colors |
+| `ColorAbs` / `ColorTc` | orange / yellow | Color while ABS / TC are cutting in |
+| `ColorShiftA` / `ColorShiftB` | red / dark | Shift-point flash colors |
+| `ShowGraph`, `ShowBars`, `ShowClutch`, `ShowGear`, `ShowWheel`, `ShowFuel`, `AidColors` | `1` | Turn parts of the HUD on or off |
+| `AutoHide`, `HideInPitBox`, `HideWhenGameNotFocused` | `1` | Auto-hide rules |
 
-## Trocar o volante
+## Change the steering wheel
 
-Coloque um PNG quadrado com fundo transparente em `assets\wheel.png`. Para uma foto com fundo branco:
+Drop a square PNG with a transparent background at `assets\wheel.png`. For a photo on a white background:
 
 ```
-powershell -ExecutionPolicy Bypass -File tools\cutout.ps1 C:\caminho\volante.jpg assets\wheel.png
+powershell -ExecutionPolicy Bypass -File tools\cutout.ps1 C:\path\wheel.jpg assets\wheel.png
 ```
 
-## Compilar
+## Build
 
 ```
 powershell -ExecutionPolicy Bypass -File build.ps1
 ```
 
-Gera `dist\EvoHud.exe` (+ `dist\assets`).
+Produces `dist\EvoHud.exe` (plus `dist\assets`).
 
-## Diagnóstico
+## Diagnostics
 
-`EvoHud.exe --probe` grava `probe.log` por 40 s com os valores brutos lidos do jogo. `EvoHud.exe --demo` abre com dados de demonstração.
+`EvoHud.exe --probe` writes `probe.log` for 40 seconds with the raw values read from the game. `EvoHud.exe --demo` starts with demo data.
+
+## Notes
+
+The shared-memory layout comes from third-party documentation of AC EVO, which is still in Early Access and may change between updates. If something stops updating after a game patch, run `--probe` and open an issue with the log.
