@@ -38,7 +38,7 @@ Right-click the tray icon and pick **Settings...** (or run `EvoHud.exe --setting
 | Fuel | Fuel in the tank, consumption per lap, laps remaining |
 | Appearance | **Size** (40% to 300%) and **transparency** sliders, plus **Reset to defaults** |
 
-Without the input graph, the pedal bars, the ABS / TC / TCC chips and the fuel lines sit side by side in one compact row.
+Without the input graph the HUD goes compact: the pedal bars sit beside a fuel card, with the ABS / TC / TCC chips in a row right below the fuel lines.
 
 The window follows your Windows language (Portuguese or English).
 ## Resize

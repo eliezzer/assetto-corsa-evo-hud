@@ -36,7 +36,7 @@ Clique com o botão direito no ícone da bandeja e escolha **Configurações...*
 | Combustível | Combustível no tanque, consumo por volta, voltas restantes |
 | Aparência | Controles de **tamanho** (40% a 300%) e de **transparência**, e **Restaurar padrões** |
 
-Sem o gráfico dos pedais, as barras, as caixinhas de ABS / TC / TCC e as linhas de combustível ficam lado a lado numa linha compacta.
+Sem o gráfico dos pedais o HUD fica compacto: as barras ficam ao lado de um cartão de combustível, com as caixinhas de ABS / TC / TCC numa linha logo abaixo das linhas de combustível.
 
 A janela segue o idioma do seu Windows (português ou inglês).
 ## Redimensionar

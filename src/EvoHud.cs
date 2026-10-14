@@ -291,7 +291,8 @@ namespace EvoHud
     {
         const int N = 420;                       // history samples (~7 s at 60 Hz)
         const double PAD = 12, ROW = 104, STRIP = 28, VGAP = 8, HGAP = 14, CHIPROW = 20;
-        const double FUEL_W = 112, PERLAP_W = 126, LAPS_W = 100, COMPACT_FUEL_W = 128;
+        const double FUEL_W = 112, PERLAP_W = 126, LAPS_W = 100, COMPACT_FUEL_W = 128, FUEL_ROW = 26;
+        const double CHIP_FS = 12, GRAPH_CHIP_FS = 11;   // ABS / TC / TCC chip font sizes (compact row / inside the graph)
 
         public Tele T = new Tele();
         public bool Unlocked;
@@ -307,7 +308,8 @@ namespace EvoHud
         public ImageSource Wheel;
 
         // computed by Relayout()
-        double colW, colX, colY, colH, contentH, graphW, aidsW, gearX, wheelX, wheelS;
+        double colW, colX, colY, colH, contentH, graphW, gearX, wheelX, wheelS;
+        double chipsW, infoW, infoH, fuelCardH, compactH;
         int nBars;
         bool rowAids, rowMain, rowFuel, hasCol, hasGear, nothing, compact;
 
@@ -338,10 +340,17 @@ namespace EvoHud
             compact = !ShowGraph && (ShowBars || ShowAids || (fuelAny && (hasGear || ShowWheel)));
             if (compact)
             {
-                aidsW = ShowAids ? Math.Max(ChipW("ABS", 0, true), ChipW("TC", 0, true)) : 0;
-                int blocks = (nBars > 0 ? 1 : 0) + (ShowAids ? 1 : 0) + (fuelAny ? 1 : 0);
+                // info column: fuel card on top, ABS / TC / TCC chips in one row below it (bigger font)
+                int nFuel = (ShowFuel ? 1 : 0) + (ShowFuelPerLap ? 1 : 0) + (ShowLapsLeft ? 1 : 0);
+                chipsW = ShowAids ? ChipW("ABS", true, CHIP_FS) + ChipW("TC", true, CHIP_FS) + ChipW("TCC", false, CHIP_FS) + 2 * 5 : 0;
+                fuelCardH = nFuel > 0 ? nFuel * FUEL_ROW + 12 : 0;
+                double chipsH = ShowAids ? CHIP_FS + 10 : 0;
+                infoW = Math.Max(nFuel > 0 ? COMPACT_FUEL_W : 0, chipsW);
+                infoH = fuelCardH + (fuelCardH > 0 && chipsH > 0 ? 6 : 0) + chipsH;
+                compactH = Math.Max(ROW, infoH);
+                bool info = infoW > 0;
                 rowMain = true; rowFuel = false;
-                colW = barsW + aidsW + (fuelAny ? COMPACT_FUEL_W : 0) + 12 * (blocks - 1);
+                colW = barsW + (nBars > 0 && info ? 12 : 0) + infoW;
                 graphW = 0;
             }
             else
@@ -357,6 +366,7 @@ namespace EvoHud
             int rows = (rowMain ? 1 : 0) + (rowFuel ? 1 : 0);
             colH = (rowAids ? CHIPROW : 0) + (rowMain ? ROW : 0) + (rowFuel ? STRIP : 0) + (rows > 1 ? VGAP * (rows - 1) : 0);
             hasCol = rows > 0;
+            if (compact) colH = compactH;
             bool right = hasGear || ShowWheel;
             contentH = Math.Max(colH, right ? ROW : 0);
             nothing = !hasCol && !right;
@@ -486,33 +496,49 @@ namespace EvoHud
             if (ShowAids)
             {
                 // right-aligned in the graph corner
-                double wA = ChipW("ABS", T.AbsLevel, true), wT = ChipW("TC", T.TcLevel, true), wC = ChipW("TCC", T.TcCutLevel, false);
+                double fs = GRAPH_CHIP_FS;
+                double wA = ChipW("ABS", true, fs), wT = ChipW("TC", true, fs), wC = ChipW("TCC", false, fs);
                 double xr = gx + gw - 4;
-                DrawChip(dc, xr, gy + 4, wC, "TCC", T.TcCutLevel, CTc, TcDuty, T.TcOn, false); xr -= wC + 4;
-                DrawChip(dc, xr, gy + 4, wT, "TC", T.TcLevel, CTc, TcDuty, T.TcOn, true); xr -= wT + 4;
-                DrawChip(dc, xr, gy + 4, wA, "ABS", T.AbsLevel, CAbs, AbsDuty, T.AbsOn, true);
+                DrawChip(dc, xr, gy + 4, wC, "TCC", T.TcCutLevel, CTc, TcDuty, T.TcOn, false, fs); xr -= wC + 4;
+                DrawChip(dc, xr, gy + 4, wT, "TC", T.TcLevel, CTc, TcDuty, T.TcOn, true, fs); xr -= wT + 4;
+                DrawChip(dc, xr, gy + 4, wA, "ABS", T.AbsLevel, CAbs, AbsDuty, T.AbsOn, true, fs);
             }
             if (T.Note.Length > 0) Text(dc, T.Note, 10, Br(255, 140, 140, 150), true, gx + 6, gy + gh - 16, 0);
         }
 
-        // no graph: [pedal bars] [ABS / TC / TCC chips stacked] [fuel lines stacked], all one row tall
+        // no graph: [pedal bars] [fuel card, with the ABS / TC / TCC chips in a row below it]
         void DrawCompact(DrawingContext dc, double x, double y)
         {
-            if (nBars > 0) { DrawBars(dc, x, y, ROW); x += 22 * nBars - 6 + 12; }
+            if (nBars > 0) { DrawBars(dc, x, y, compactH); x += 22 * nBars - 6 + 12; }
+            double iy = y + (compactH - infoH) / 2;
+            if (fuelCardH > 0)
+            {
+                dc.DrawRoundedRectangle(Br(10, 255, 255, 255), null, new Rect(x, iy, infoW, fuelCardH), 3, 3);
+                double ry = iy + 6;
+                if (ShowFuel) { FuelRow(dc, x, ry, infoW, "FUEL", T.Fuel > 0 ? T.Fuel.ToString("0.0", CultureInfo.InvariantCulture) : "--", "L"); ry += FUEL_ROW; }
+                if (ShowFuelPerLap) { FuelRow(dc, x, ry, infoW, "PER LAP", PerLap > 0 ? PerLap.ToString("0.00", CultureInfo.InvariantCulture) : "--", "L"); ry += FUEL_ROW; }
+                if (ShowLapsLeft) FuelRow(dc, x, ry, infoW, "LAPS", LapsLeft > 0 ? LapsLeft.ToString("0.0", CultureInfo.InvariantCulture) : "--", "");
+                iy += fuelCardH + 6;
+            }
             if (ShowAids)
             {
-                double ch = 16, gap = 6, top = y + (ROW - (3 * ch + 2 * gap)) / 2;
-                DrawChip(dc, x + aidsW, top, aidsW, "ABS", T.AbsLevel, CAbs, AbsDuty, T.AbsOn, true);
-                DrawChip(dc, x + aidsW, top + ch + gap, aidsW, "TC", T.TcLevel, CTc, TcDuty, T.TcOn, true);
-                DrawChip(dc, x + aidsW, top + 2 * (ch + gap), aidsW, "TCC", T.TcCutLevel, CTc, TcDuty, T.TcOn, false);
-                x += aidsW + 12;
+                double wA = ChipW("ABS", true, CHIP_FS), wT = ChipW("TC", true, CHIP_FS), wC = ChipW("TCC", false, CHIP_FS);
+                double gap = (infoW - wA - wT - wC) / 2;          // spread the chips across the card width
+                double xr = x + wA;
+                DrawChip(dc, xr, iy, wA, "ABS", T.AbsLevel, CAbs, AbsDuty, T.AbsOn, true, CHIP_FS); xr += gap + wT;
+                DrawChip(dc, xr, iy, wT, "TC", T.TcLevel, CTc, TcDuty, T.TcOn, true, CHIP_FS); xr += gap + wC;
+                DrawChip(dc, xr, iy, wC, "TCC", T.TcCutLevel, CTc, TcDuty, T.TcOn, false, CHIP_FS);
             }
-            int n = (ShowFuel ? 1 : 0) + (ShowFuelPerLap ? 1 : 0) + (ShowLapsLeft ? 1 : 0);
-            if (n > 0)
-            {
-                dc.DrawRoundedRectangle(Br(10, 255, 255, 255), null, new Rect(x, y, COMPACT_FUEL_W, ROW), 3, 3);
-                FuelItems(dc, x + 10, y + (ROW - n * 30) / 2, true);
-            }
+        }
+
+        // one line of the fuel card: label on the left, value (and unit) right-aligned
+        void FuelRow(DrawingContext dc, double x, double y, double w, string label, string val, string unit)
+        {
+            Brush gray = Br(255, 140, 140, 150);
+            double rx = x + w - 10;
+            if (unit.Length > 0) { Text(dc, unit, 10, gray, false, rx, y + 8, 2); rx -= TextWidth(unit, 10, false) + 3; }
+            Text(dc, val, 17, Br(255, 245, 245, 245), true, rx, y + 1, 2);
+            Text(dc, label, 9, gray, true, x + 10, y + 8, 0);
         }
 
         void DrawBars(DrawingContext dc, double bx, double by, double bh)
@@ -576,23 +602,10 @@ namespace EvoHud
         void DrawFuel(DrawingContext dc, double x, double y, double w)
         {
             dc.DrawRoundedRectangle(Br(10, 255, 255, 255), null, new Rect(x, y, w, STRIP), 3, 3);
-            FuelItems(dc, x + 10, y, false);
-        }
-
-        // the enabled fuel items, side by side (strip) or stacked (compact)
-        void FuelItems(DrawingContext dc, double x, double y, bool vertical)
-        {
-            if (ShowFuel)
-            {
-                FuelItem(dc, x, y, "FUEL", T.Fuel > 0 ? T.Fuel.ToString("0.0", CultureInfo.InvariantCulture) : "--", "L");
-                if (vertical) y += 30; else x += FUEL_W;
-            }
-            if (ShowFuelPerLap)
-            {
-                FuelItem(dc, x, y, "PER LAP", PerLap > 0 ? PerLap.ToString("0.00", CultureInfo.InvariantCulture) : "--", "L");
-                if (vertical) y += 30; else x += PERLAP_W;
-            }
-            if (ShowLapsLeft) FuelItem(dc, x, y, "LAPS", LapsLeft > 0 ? LapsLeft.ToString("0.0", CultureInfo.InvariantCulture) : "--", "");
+            double ix = x + 10;
+            if (ShowFuel) { FuelItem(dc, ix, y, "FUEL", T.Fuel > 0 ? T.Fuel.ToString("0.0", CultureInfo.InvariantCulture) : "--", "L"); ix += FUEL_W; }
+            if (ShowFuelPerLap) { FuelItem(dc, ix, y, "PER LAP", PerLap > 0 ? PerLap.ToString("0.00", CultureInfo.InvariantCulture) : "--", "L"); ix += PERLAP_W; }
+            if (ShowLapsLeft) FuelItem(dc, ix, y, "LAPS", LapsLeft > 0 ? LapsLeft.ToString("0.0", CultureInfo.InvariantCulture) : "--", "");
         }
 
         void DrawUnlocked(DrawingContext dc)
@@ -635,16 +648,17 @@ namespace EvoHud
             return txt;
         }
 
-        // width for the widest text ("100%") so the chips don't jitter as the percentage changes
-        double ChipW(string label, int level, bool showDuty) { return TextWidth(ChipText(label, level, 1.0, showDuty), 10, true) + 12; }
+        // width for the widest text (a 1-digit level and "100%") so the chips don't jitter as the numbers change
+        double ChipW(string label, bool showDuty, double fs) { return TextWidth(ChipText(label, 8, 1.0, showDuty), fs, true) + 14; }
 
-        // right edge at xr, fixed width w
-        void DrawChip(DrawingContext dc, double xr, double y, double w, string label, int level, Color c, double duty, bool now, bool showDuty)
+        // right edge at xr, fixed width w, font size fs (height = fs + 8)
+        void DrawChip(DrawingContext dc, double xr, double y, double w, string label, int level, Color c, double duty, bool now, bool showDuty, double fs)
         {
             double k = now ? 1.0 : Math.Min(1, duty * 1.6);
             Color fill = Mix(Color.FromRgb(36, 36, 44), c, k);
-            dc.DrawRoundedRectangle(Br(fill), null, new Rect(xr - w, y, w, 16), 3, 3);
-            Text(dc, ChipText(label, level, duty, showDuty), 10, k > 0.55 ? Br(255, 10, 10, 10) : Br(255, 200, 200, 208), true, xr - w / 2, y + 1.5, 1);
+            double h = fs + 8;
+            dc.DrawRoundedRectangle(Br(fill), null, new Rect(xr - w, y, w, h), 3, 3);
+            Text(dc, ChipText(label, level, duty, showDuty), fs, k > 0.55 ? Br(255, 10, 10, 10) : Br(255, 200, 200, 208), true, xr - w / 2, y + (h - fs * 1.25) / 2, 1);
         }
     }
 
