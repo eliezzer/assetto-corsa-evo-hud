@@ -111,7 +111,7 @@ namespace EvoHud
             G_TCACT = G("tcActive"), G_ABSACT = G("absActive"), G_FUEL = G("fuelLiterCurrentQuantity"),
             G_FUELLAP = G("fuelLiterPerLap"), G_LAPMS = G("currentLapTimeMs"), G_LAPSPOSS = G("lapsPossibleWithFuel"),
             G_RPM = G("rpm"), G_PACKET = G("packetId"), G_ELEC = G("electronics"), G_SHIFTUP = G("isChangeUp"),
-            G_STATUS = G("status"), G_PITBOX = G("isInPitBox"), G_PITLANE = G("isInPitLane"), G_LOCATION = G("carLocation");
+            G_CLUTCHPCT = G("clutchPercent"), G_STATUS = G("status"), G_PITBOX = G("isInPitBox"), G_PITLANE = G("isInPitLane"), G_LOCATION = G("carLocation");
         static readonly int GFX_LEN = G("isValidLap") + 1;
 
         MemoryMappedFile fPhy, fGfx;
@@ -195,7 +195,7 @@ namespace EvoHud
                 "steerRaw={10:0.000} steerDegG={11} steerPctG={12:0.000} tcF={13:0.000} absF={14:0.000} tcAct={15} absAct={16} " +
                 "tcG={17} absG={18} fuel={19:0.00} fuelLapG={20:0.000} lapsPoss={21:0.0} lapMs={22} physFuel={23:0.00} " +
                 "elec=[tc {24} tcCut {25} abs {26} esc {27} ebb {28} bb {29:0.000}] " +
-                "status={30} pitBox={31} pitLane={32} location={33} shiftUp={34}",
+                "status={30} pitBox={31} pitLane={32} location={33} shiftUp={34} cluG={35:0.000} autoShift={36}",
                 BitConverter.ToInt32(pb, 0), BitConverter.ToSingle(pb, P_GAS), BitConverter.ToSingle(pb, P_BRAKE),
                 BitConverter.ToSingle(pb, P_CLUTCH), BitConverter.ToInt32(pb, P_GEAR), BitConverter.ToInt16(gb, G_GEAR),
                 BitConverter.ToInt32(pb, P_RPM), BitConverter.ToUInt16(gb, G_RPM), BitConverter.ToInt32(pb, P_MAXRPM),
@@ -208,7 +208,8 @@ namespace EvoHud
                 BitConverter.ToSingle(pb, 12),
                 (sbyte)gb[G_ELEC], (sbyte)gb[G_ELEC + 1], (sbyte)gb[G_ELEC + 2], (sbyte)gb[G_ELEC + 3], (sbyte)gb[G_ELEC + 4],
                 BitConverter.ToSingle(gb, G_ELEC + 8),
-                BitConverter.ToInt32(gb, G_STATUS), gb[G_PITBOX], gb[G_PITLANE], BitConverter.ToInt32(gb, G_LOCATION), gb[G_SHIFTUP]);
+                BitConverter.ToInt32(gb, G_STATUS), gb[G_PITBOX], gb[G_PITLANE], BitConverter.ToInt32(gb, G_LOCATION), gb[G_SHIFTUP],
+                BitConverter.ToSingle(gb, G_CLUTCHPCT), BitConverter.ToInt32(pb, 264));
         }
 
         static float Clamp01(float v) { return float.IsNaN(v) ? 0 : (v < 0 ? 0 : (v > 1 ? 1 : v)); }
@@ -408,9 +409,11 @@ namespace EvoHud
             if (ShowBars)
             {
                 double bx = 322, by = 12, bh = 104;
+                // without the clutch bar, center the two remaining bars in the same space
+                double off = ShowClutch ? 0 : 11;
                 if (ShowClutch) Pedal(dc, bx, by, bh, T.Clutch, CClutch, false);
-                Pedal(dc, bx + 22, by, bh, T.Brake, CBrake, T.AbsOn);
-                Pedal(dc, bx + 44, by, bh, T.Gas, CThrottle, T.TcOn);
+                Pedal(dc, bx + 22 - off, by, bh, T.Brake, CBrake, T.AbsOn);
+                Pedal(dc, bx + 44 - off, by, bh, T.Gas, CThrottle, T.TcOn);
             }
 
             // --- gear + speed + shift lights
@@ -518,7 +521,7 @@ namespace EvoHud
         readonly DemoSource demo = new DemoSource();
         readonly DispatcherTimer timer = new DispatcherTimer(DispatcherPriority.Render);
         WF.NotifyIcon tray;
-        WF.ToolStripMenuItem miLock, miDemo, miAutoHide;
+        WF.ToolStripMenuItem miLock, miDemo, miAutoHide, miClutch;
         bool locked = true, useDemo;
         // auto-hide outside of driving (menus, replays, pause, setup in the pit box, game not focused)
         bool autoHide, hideInPitBox, hideUnfocused, sawLiveStatus;
@@ -759,6 +762,14 @@ namespace EvoHud
             });
             miAutoHide.Checked = autoHide;
             menu.Items.Add(miAutoHide);
+            // for cars/setups without a clutch pedal (auto clutch makes the value move on its own)
+            miClutch = new WF.ToolStripMenuItem("Show clutch (bar and graph line)", null, delegate
+            {
+                view.ShowClutch = !view.ShowClutch; miClutch.Checked = view.ShowClutch;
+                cfg.Set("ShowClutch", view.ShowClutch ? "1" : "0"); SaveState(); view.InvalidateVisual();
+            });
+            miClutch.Checked = view.ShowClutch;
+            menu.Items.Add(miClutch);
             menu.Items.Add(new WF.ToolStripMenuItem("Quit", null, delegate { Close(); }));
             tray.ContextMenuStrip = menu;
             tray.DoubleClick += delegate { ToggleLock(); };

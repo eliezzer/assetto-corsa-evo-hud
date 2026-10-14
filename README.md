@@ -21,7 +21,9 @@ Grab `EvoHud-v1.1-windows.zip` from the [Releases](../../releases) page, extract
 3. The HUD only shows while you are driving. It hides in menus, replays, pause, while parked in the pit box (setup screen) and when the game is not the foreground window.
 4. A red "E" icon appears in the system tray (next to the clock). Right-click it for:
    - **Unlock / Lock position**: unlock to drag the HUD (also `Ctrl+Shift+L`, or double-click the tray icon).
-   - **Reset position**, **Demo mode**, **Hide when not driving**, **Quit**.
+   - **Reset position**, **Demo mode**, **Hide when not driving**, **Show clutch**, **Quit**.
+
+**No clutch pedal?** Untick **Show clutch** in the tray menu (or set `ShowClutch=0`). With an automatic clutch the game moves the clutch value by itself, so the blue bar would look stuck. The bar and its graph line disappear and the other two bars re-center.
 
 To start it with Windows, put a shortcut to `EvoHud.exe` in the Startup folder (`Win+R`, then `shell:startup`).
 

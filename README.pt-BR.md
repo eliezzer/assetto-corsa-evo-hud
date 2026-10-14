@@ -21,7 +21,9 @@ Baixe o `EvoHud-v1.1-windows.zip` na página de [Releases](../../releases), extr
 3. O HUD aparece só enquanto você está pilotando. Some em menus, replay, pausa, parado no box (setup) e quando o jogo não está em primeiro plano.
 4. Ícone "E" na bandeja do sistema (perto do relógio), clique direito:
    - **Unlock / Lock position**: destrava para arrastar (também `Ctrl+Shift+L` ou duplo clique no ícone).
-   - **Reset position**, **Demo mode**, **Hide when not driving**, **Quit**.
+   - **Reset position**, **Demo mode**, **Hide when not driving**, **Show clutch**, **Quit**.
+
+**Sem pedal de embreagem?** Desmarque **Show clutch** no menu da bandeja (ou use `ShowClutch=0`). Com embreagem automática o jogo mexe no valor da embreagem sozinho, e a barra azul parece travada. A barra e a linha dela no gráfico somem e as outras duas barras se centralizam.
 
 ## Redimensionar
 
