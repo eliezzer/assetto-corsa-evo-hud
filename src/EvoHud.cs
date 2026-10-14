@@ -8,6 +8,7 @@ using System.IO;
 using System.IO.MemoryMappedFiles;
 using System.Runtime.InteropServices;
 using System.Windows;
+using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
@@ -461,9 +462,19 @@ namespace EvoHud
 
             if (Unlocked)
             {
-                Rect banner = new Rect(W / 2 - 170, Height / 2 - 12, 340, 24);
+                Rect banner = new Rect(W / 2 - 235, Height / 2 - 12, 470, 24);
                 dc.DrawRoundedRectangle(Br(235, 255, 200, 0), null, banner, 4, 4);
-                Text(dc, "UNLOCKED  ·  drag to move  ·  Ctrl+Shift+L to lock", 11, Br(255, 10, 10, 10), true, W / 2, banner.Y + 5, 1);
+                Text(dc, "UNLOCKED  ·  drag to move  ·  scroll or drag corner to resize  ·  Ctrl+Shift+L to lock", 10, Br(255, 10, 10, 10), true, W / 2, banner.Y + 6, 1);
+                // resize grip (bottom-right corner)
+                var grip = new StreamGeometry();
+                using (StreamGeometryContext c = grip.Open())
+                {
+                    c.BeginFigure(new Point(W - 4, Height - 26), true, true);
+                    c.LineTo(new Point(W - 4, Height - 4), true, false);
+                    c.LineTo(new Point(W - 26, Height - 4), true, false);
+                }
+                grip.Freeze();
+                dc.DrawGeometry(Br(255, 255, 200, 0), null, grip);
             }
         }
 
@@ -518,6 +529,13 @@ namespace EvoHud
         [DllImport("user32.dll")] static extern IntPtr GetForegroundWindow();
         [DllImport("user32.dll")] static extern uint GetWindowThreadProcessId(IntPtr h, out uint pid);
         IntPtr hwnd;
+        // size: 0.4x .. 3x of the base layout (644 x 162 px)
+        const double MinScale = 0.4, MaxScale = 3.0;
+        const string Ver = "1.1";
+        double scale = 1.0;
+        bool resizing;
+        readonly List<WF.ToolStripMenuItem> miSizes = new List<WF.ToolStripMenuItem>();
+        readonly List<int> sizePcts = new List<int>();
         // fuel-per-lap fallback
         int prevLapMs; float lapStartFuel; double measuredPerLap;
 
@@ -541,7 +559,8 @@ namespace EvoHud
             view.AidColors = s.Bool("AidColors", true); view.InvertSteer = s.Bool("InvertSteer", false);
             view.Height = view.ShowFuel ? HudView.H : HudView.H_NOFUEL;
             view.Wheel = LoadWheel(Path.Combine(dir, s.Str("Wheel", "assets\\wheel.png")));
-            double sc = Math.Max(0.4, Math.Min(3, s.Num("Scale", 1.0)));
+            double sc = Math.Max(MinScale, Math.Min(MaxScale, s.Num("Scale", 1.0)));
+            scale = sc;
             view.LayoutTransform = new ScaleTransform(sc, sc);
             Content = view;
 
@@ -554,9 +573,16 @@ namespace EvoHud
             }
             Left = x; Top = y;
 
-            MouseLeftButtonDown += delegate { if (!locked) try { DragMove(); } catch { } };
+            MouseLeftButtonDown += OnMouseDown;
+            MouseMove += OnMouseMove;
+            MouseLeftButtonUp += OnMouseUp;
+            MouseWheel += OnWheel;
             SourceInitialized += OnSourceInit;
-            Closed += delegate { SaveState(); if (tray != null) { tray.Visible = false; tray.Dispose(); } if (hwnd != IntPtr.Zero) UnregisterHotKey(hwnd, 1); };
+            Closed += delegate
+            {
+                SaveState(); if (tray != null) { tray.Visible = false; tray.Dispose(); }
+                if (hwnd != IntPtr.Zero) for (int id = 1; id <= 5; id++) UnregisterHotKey(hwnd, id);
+            };
 
             BuildTray();
             timer.Interval = TimeSpan.FromMilliseconds(16);
@@ -583,11 +609,73 @@ namespace EvoHud
             if (!RegisterHotKey(hwnd, 1, 0x0002 | 0x0004, 0x4C)) // Ctrl+Shift+L
                 tray.ShowBalloonTip(5000, "EVO HUD", "Ctrl+Shift+L is used by another app (is the other EVO-HUD open?). " +
                     "Double-click this tray icon to lock/unlock instead.", WF.ToolTipIcon.Warning);
+            // Ctrl+Shift + / -  (main keys and numpad) to resize without unlocking
+            RegisterHotKey(hwnd, 2, 0x0006, 0xBB); RegisterHotKey(hwnd, 3, 0x0006, 0xBD);
+            RegisterHotKey(hwnd, 4, 0x0006, 0x6B); RegisterHotKey(hwnd, 5, 0x0006, 0x6D);
             HwndSource.FromHwnd(hwnd).AddHook(delegate (IntPtr h, int msg, IntPtr w, IntPtr l, ref bool handled)
             {
-                if (msg == 0x0312 && w.ToInt32() == 1) { ToggleLock(); handled = true; }
+                if (msg == 0x0312)
+                {
+                    int id = w.ToInt32();
+                    if (id == 1) { ToggleLock(); handled = true; }
+                    else if (id == 2 || id == 4) { Step(1.1); handled = true; }
+                    else if (id == 3 || id == 5) { Step(1 / 1.1); handled = true; }
+                }
                 return IntPtr.Zero;
             });
+        }
+
+        // ---- resizing -------------------------------------------------------------------
+        // Anchor = HUD center (so it grows in place) unless the user is dragging the corner grip.
+        void ApplyScale(double s, bool keepCenter)
+        {
+            s = Math.Max(MinScale, Math.Min(MaxScale, Math.Round(s, 3)));
+            if (Math.Abs(s - scale) < 0.0005) return;
+            double oldW = HudView.W * scale, oldH = view.Height * scale, newW = HudView.W * s, newH = view.Height * s;
+            scale = s;
+            view.LayoutTransform = new ScaleTransform(s, s);
+            if (keepCenter) { Left -= (newW - oldW) / 2; Top -= (newH - oldH) / 2; }
+            UpdateSizeMenu();
+        }
+
+        void Step(double factor) { ApplyScale(scale * factor, true); SaveState(); }
+
+        void UpdateSizeMenu()
+        {
+            for (int i = 0; i < miSizes.Count; i++) miSizes[i].Checked = Math.Abs(scale * 100 - sizePcts[i]) < 1.0;
+            if (tray != null) tray.Text = "EVO HUD " + Ver + "  -  size " + Math.Round(scale * 100) + "%";
+        }
+
+        bool OnGrip()
+        {
+            Point p = Mouse.GetPosition(view);
+            return p.X > HudView.W - 34 && p.Y > view.Height - 34;
+        }
+
+        void OnMouseDown(object sender, MouseButtonEventArgs e)
+        {
+            if (locked) return;
+            if (OnGrip()) { resizing = true; CaptureMouse(); return; }
+            try { DragMove(); } catch { }
+        }
+
+        void OnMouseMove(object sender, MouseEventArgs e)
+        {
+            if (resizing) { ApplyScale(Mouse.GetPosition(this).X / HudView.W, false); return; }
+            if (!locked) Cursor = OnGrip() ? Cursors.SizeNWSE : Cursors.SizeAll;
+        }
+
+        void OnMouseUp(object sender, MouseButtonEventArgs e)
+        {
+            if (!resizing) return;
+            resizing = false; ReleaseMouseCapture(); SaveState();
+        }
+
+        void OnWheel(object sender, MouseWheelEventArgs e)
+        {
+            if (locked) return;
+            Step(e.Delta > 0 ? 1.05 : 1 / 1.05);
+            e.Handled = true;
         }
 
         // Locked: click-through and never takes focus from the game.
@@ -607,17 +695,17 @@ namespace EvoHud
             if (locked) SaveState();
             else { Activate(); Topmost = false; Topmost = true; }
             miLock.Text = locked ? "Unlock position (Ctrl+Shift+L)" : "Lock position (Ctrl+Shift+L)";
-            tray.ShowBalloonTip(2500, "EVO HUD", locked ? "Locked. Position saved." :
-                "Unlocked: drag the HUD with the mouse, then press Ctrl+Shift+L (or double-click the tray icon) to lock.",
+            if (locked) { resizing = false; Cursor = Cursors.Arrow; }
+            tray.ShowBalloonTip(2500, "EVO HUD", locked ? "Locked. Position and size saved." :
+                "Unlocked: drag to move, scroll or drag the bottom-right corner to resize. Ctrl+Shift+L (or double-click the tray icon) to lock.",
                 WF.ToolTipIcon.None);
             view.InvalidateVisual();
         }
 
         void ResetPosition()
         {
-            double sc = ((ScaleTransform)view.LayoutTransform).ScaleX;
-            Left = (SystemParameters.PrimaryScreenWidth - HudView.W * sc) / 2;
-            Top = SystemParameters.PrimaryScreenHeight - view.Height * sc - 40;
+            Left = (SystemParameters.PrimaryScreenWidth - HudView.W * scale) / 2;
+            Top = SystemParameters.PrimaryScreenHeight - view.Height * scale - 40;
             SaveState();
         }
 
@@ -625,6 +713,7 @@ namespace EvoHud
         {
             cfg.Set("X", Left.ToString("0", CultureInfo.InvariantCulture));
             cfg.Set("Y", Top.ToString("0", CultureInfo.InvariantCulture));
+            cfg.Set("Scale", scale.ToString("0.###", CultureInfo.InvariantCulture));
             cfg.Set("Demo", useDemo ? "1" : "0");
             try { cfg.Save(); } catch { }
         }
@@ -650,6 +739,17 @@ namespace EvoHud
             miDemo = new WF.ToolStripMenuItem("Demo mode", null, delegate { useDemo = !useDemo; miDemo.Checked = useDemo; });
             miDemo.Checked = useDemo;
             menu.Items.Add(miLock);
+            var size = new WF.ToolStripMenuItem("Size");
+            foreach (int pct in new int[] { 50, 75, 100, 125, 150, 200, 250 })
+            {
+                int p = pct;
+                var mi = new WF.ToolStripMenuItem(p + "%", null, delegate { ApplyScale(p / 100.0, true); SaveState(); });
+                size.DropDownItems.Add(mi); miSizes.Add(mi); sizePcts.Add(p);
+            }
+            size.DropDownItems.Add(new WF.ToolStripSeparator());
+            size.DropDownItems.Add(new WF.ToolStripMenuItem("Bigger (Ctrl+Shift++)", null, delegate { Step(1.1); }));
+            size.DropDownItems.Add(new WF.ToolStripMenuItem("Smaller (Ctrl+Shift+-)", null, delegate { Step(1 / 1.1); }));
+            menu.Items.Add(size);
             menu.Items.Add(new WF.ToolStripMenuItem("Reset position", null, delegate { ResetPosition(); }));
             menu.Items.Add(miDemo);
             miAutoHide = new WF.ToolStripMenuItem("Hide when not driving", null, delegate
@@ -663,6 +763,7 @@ namespace EvoHud
             tray.ContextMenuStrip = menu;
             tray.DoubleClick += delegate { ToggleLock(); };
             tray.Visible = true;
+            UpdateSizeMenu();
         }
 
         void Tick(object sender, EventArgs e)

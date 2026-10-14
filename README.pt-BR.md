@@ -12,7 +12,7 @@ Lê a memória compartilhada do jogo (`Local\acevo_pmf_physics` / `Local\acevo_p
 
 ## Baixar
 
-Baixe o `EvoHud-v1.0-windows.zip` na página de [Releases](../../releases), extraia e rode o `EvoHud.exe`. Mantenha a pasta `assets` ao lado do `.exe`.
+Baixe o `EvoHud-v1.1-windows.zip` na página de [Releases](../../releases), extraia e rode o `EvoHud.exe`. Mantenha a pasta `assets` ao lado do `.exe`.
 
 ## Usar
 
@@ -23,13 +23,22 @@ Baixe o `EvoHud-v1.0-windows.zip` na página de [Releases](../../releases), extr
    - **Unlock / Lock position**: destrava para arrastar (também `Ctrl+Shift+L` ou duplo clique no ícone).
    - **Reset position**, **Demo mode**, **Hide when not driving**, **Quit**.
 
+## Redimensionar
+
+Escolha o tamanho que quiser, de 40% a 300% do padrão. O tamanho é salvo e volta igual na próxima vez.
+
+- **Ícone da bandeja, botão direito, Size**: 50%, 75%, 100%, 125%, 150%, 200%, 250%, ou Bigger (maior) / Smaller (menor).
+- **Atalhos (funcionam a qualquer hora, inclusive jogando)**: `Ctrl+Shift++` aumenta, `Ctrl+Shift+-` diminui (teclas do teclado principal ou do numérico).
+- **Com o mouse**: destrave o HUD (`Ctrl+Shift+L`), depois **gire a rodinha do mouse** sobre ele ou **arraste o canto amarelo no canto inferior direito**. Trave de novo quando terminar.
+
+Também dá para definir à mão com `Scale` no `settings.ini` (por exemplo `Scale=1.5`).
 ## Configurar
 
 `settings.ini` é criado ao lado do `.exe` (edite com o app fechado):
 
 | Chave | Padrão | O que faz |
 |---|---|---|
-| `Scale` | `1.0` | Tamanho do HUD |
+| `Scale` | `1.0` | Tamanho do HUD, de 0.4 a 3.0 (salvo quando você redimensiona) |
 | `Opacity` | `0.94` | Transparência |
 | `Wheel` | `assets\wheel.png` | Imagem do volante (PNG quadrado, fundo transparente, centralizado) |
 | `InvertSteer` | `0` | Inverte o giro do volante |

@@ -12,7 +12,7 @@ It reads the game's shared memory directly (`Local\acevo_pmf_physics` / `Local\a
 
 ## Download
 
-Grab `EvoHud-v1.0-windows.zip` from the [Releases](../../releases) page, extract it and run `EvoHud.exe`. Keep the `assets` folder next to the `.exe` (it holds the wheel image).
+Grab `EvoHud-v1.1-windows.zip` from the [Releases](../../releases) page, extract it and run `EvoHud.exe`. Keep the `assets` folder next to the `.exe` (it holds the wheel image).
 
 ## Use
 
@@ -25,13 +25,22 @@ Grab `EvoHud-v1.0-windows.zip` from the [Releases](../../releases) page, extract
 
 To start it with Windows, put a shortcut to `EvoHud.exe` in the Startup folder (`Win+R`, then `shell:startup`).
 
+## Resize
+
+Pick the size you want, from 40% to 300% of the default. The size is saved and restored next time.
+
+- **Tray icon, right-click, Size**: 50%, 75%, 100%, 125%, 150%, 200%, 250%, or Bigger / Smaller.
+- **Hotkeys (work any time, even while playing)**: `Ctrl+Shift++` makes it bigger, `Ctrl+Shift+-` makes it smaller (main keys or numpad).
+- **With the mouse**: unlock the HUD (`Ctrl+Shift+L`), then **scroll the mouse wheel** over it, or **drag the yellow corner at the bottom-right**. Lock it again when done.
+
+You can also set it by hand with `Scale` in `settings.ini` (for example `Scale=1.5`).
 ## Configure
 
 `settings.ini` is created next to the `.exe` (edit it while the app is closed):
 
 | Key | Default | What it does |
 |---|---|---|
-| `Scale` | `1.0` | HUD size |
+| `Scale` | `1.0` | HUD size, 0.4 to 3.0 (saved when you resize it) |
 | `Opacity` | `0.94` | Transparency |
 | `Wheel` | `assets\wheel.png` | Wheel image (square PNG, transparent background, centered) |
 | `InvertSteer` | `0` | Reverses the wheel rotation |
