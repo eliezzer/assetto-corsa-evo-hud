@@ -12,7 +12,7 @@ It reads the game's shared memory directly (`Local\acevo_pmf_physics` / `Local\a
 
 ## Download
 
-Grab `EvoHud-v1.1.1-windows.zip` from the [Releases](../../releases) page, extract it and run `EvoHud.exe`. Keep the `assets` folder next to the `.exe` (it holds the wheel image).
+Grab `EvoHud-v1.1.2-windows.zip` from the [Releases](../../releases) page, extract it and run `EvoHud.exe`. Keep the `assets` folder next to the `.exe` (it holds the wheel image).
 
 ## Use
 
@@ -38,7 +38,7 @@ Right-click the tray icon and pick **Settings...** (or run `EvoHud.exe --setting
 | Fuel | Fuel in the tank, consumption per lap, laps remaining |
 | Appearance | **Size** (40% to 300%) and **transparency** sliders, plus **Reset to defaults** |
 
-Without the input graph the HUD goes compact: the pedal bars sit beside a fuel card, with the ABS / TC / TCC chips in a row right below the fuel lines.
+With the input graph, the ABS / TC / TCC chips sit in a row below the fuel strip. Without the input graph the HUD goes compact: the pedal bars sit beside a fuel card, with the ABS / TC / TCC chips in a row right below the fuel lines.
 
 The window follows your Windows language (Portuguese or English).
 ## Resize

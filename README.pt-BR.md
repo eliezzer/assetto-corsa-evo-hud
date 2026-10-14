@@ -12,7 +12,7 @@ Lê a memória compartilhada do jogo (`Local\acevo_pmf_physics` / `Local\acevo_p
 
 ## Baixar
 
-Baixe o `EvoHud-v1.1.1-windows.zip` na página de [Releases](../../releases), extraia e rode o `EvoHud.exe`. Mantenha a pasta `assets` ao lado do `.exe`.
+Baixe o `EvoHud-v1.1.2-windows.zip` na página de [Releases](../../releases), extraia e rode o `EvoHud.exe`. Mantenha a pasta `assets` ao lado do `.exe`.
 
 ## Usar
 
@@ -36,7 +36,7 @@ Clique com o botão direito no ícone da bandeja e escolha **Configurações...*
 | Combustível | Combustível no tanque, consumo por volta, voltas restantes |
 | Aparência | Controles de **tamanho** (40% a 300%) e de **transparência**, e **Restaurar padrões** |
 
-Sem o gráfico dos pedais o HUD fica compacto: as barras ficam ao lado de um cartão de combustível, com as caixinhas de ABS / TC / TCC numa linha logo abaixo das linhas de combustível.
+Com o gráfico dos pedais, as caixinhas de ABS / TC / TCC ficam numa linha abaixo da tira de combustível. Sem o gráfico dos pedais o HUD fica compacto: as barras ficam ao lado de um cartão de combustível, com as caixinhas de ABS / TC / TCC numa linha logo abaixo das linhas de combustível.
 
 A janela segue o idioma do seu Windows (português ou inglês).
 ## Redimensionar

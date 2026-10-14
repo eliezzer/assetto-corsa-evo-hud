@@ -292,7 +292,7 @@ namespace EvoHud
         const int N = 420;                       // history samples (~7 s at 60 Hz)
         const double PAD = 12, ROW = 104, STRIP = 28, VGAP = 8, HGAP = 14, CHIPROW = 20;
         const double FUEL_W = 112, PERLAP_W = 126, LAPS_W = 100, COMPACT_FUEL_W = 128, FUEL_ROW = 26;
-        const double CHIP_FS = 12, GRAPH_CHIP_FS = 11;   // ABS / TC / TCC chip font sizes (compact row / inside the graph)
+        const double CHIP_FS = 12;                       // ABS / TC / TCC chip font size (chip height = CHIP_FS + 8 = CHIPROW)
 
         public Tele T = new Tele();
         public bool Unlocked;
@@ -357,13 +357,15 @@ namespace EvoHud
             {
                 rowMain = ShowGraph || ShowBars;
                 rowFuel = fuelAny;
+                rowAids = ShowAids && ShowGraph;      // ABS / TC / TCC chips: own row below the fuel strip
+                chipsW = rowAids ? ChipW("ABS", true, CHIP_FS) + ChipW("TC", true, CHIP_FS) + ChipW("TCC", false, CHIP_FS) + 2 * 5 : 0;
                 double wMain = (ShowGraph ? 300 : 0) + (ShowGraph && ShowBars ? 10 : 0) + barsW;
                 double wFuel = rowFuel ? 20 + (ShowFuel ? FUEL_W : 0) + (ShowFuelPerLap ? PERLAP_W : 0) + (ShowLapsLeft ? LAPS_W : 0) : 0;
-                colW = Math.Max(wMain, wFuel);
+                colW = Math.Max(wMain, Math.Max(wFuel, chipsW));
                 graphW = ShowGraph ? colW - (ShowBars ? barsW + 10 : 0) : 0;   // graph absorbs any extra width
             }
 
-            int rows = (rowMain ? 1 : 0) + (rowFuel ? 1 : 0);
+            int rows = (rowAids ? 1 : 0) + (rowMain ? 1 : 0) + (rowFuel ? 1 : 0);
             colH = (rowAids ? CHIPROW : 0) + (rowMain ? ROW : 0) + (rowFuel ? STRIP : 0) + (rows > 1 ? VGAP * (rows - 1) : 0);
             hasCol = rows > 0;
             if (compact) colH = compactH;
@@ -473,7 +475,8 @@ namespace EvoHud
                     if (ShowBars) DrawBars(dc, colX + (ShowGraph ? graphW + 10 : 0), y, ROW);
                     y += ROW + VGAP;
                 }
-                if (rowFuel) DrawFuel(dc, colX, y, colW);
+                if (rowFuel) { DrawFuel(dc, colX, y, colW); y += STRIP + VGAP; }
+                if (rowAids) DrawAidsRow(dc, colX, y, colW);
             }
             if (hasGear) DrawGear(dc, white, gray);
             if (ShowWheel) DrawWheel(dc);
@@ -492,16 +495,6 @@ namespace EvoHud
             {
                 dc.DrawGeometry(null, new Pen(Br(CAbs), 3.0), Line(hBrk, hAbs, gx, gy, gw, gh));
                 dc.DrawGeometry(null, new Pen(Br(CTc), 3.0), Line(hGas, hTc, gx, gy, gw, gh));
-            }
-            if (ShowAids)
-            {
-                // right-aligned in the graph corner
-                double fs = GRAPH_CHIP_FS;
-                double wA = ChipW("ABS", true, fs), wT = ChipW("TC", true, fs), wC = ChipW("TCC", false, fs);
-                double xr = gx + gw - 4;
-                DrawChip(dc, xr, gy + 4, wC, "TCC", T.TcCutLevel, CTc, TcDuty, T.TcOn, false, fs); xr -= wC + 4;
-                DrawChip(dc, xr, gy + 4, wT, "TC", T.TcLevel, CTc, TcDuty, T.TcOn, true, fs); xr -= wT + 4;
-                DrawChip(dc, xr, gy + 4, wA, "ABS", T.AbsLevel, CAbs, AbsDuty, T.AbsOn, true, fs);
             }
             if (T.Note.Length > 0) Text(dc, T.Note, 10, Br(255, 140, 140, 150), true, gx + 6, gy + gh - 16, 0);
         }
@@ -529,6 +522,17 @@ namespace EvoHud
                 DrawChip(dc, xr, iy, wT, "TC", T.TcLevel, CTc, TcDuty, T.TcOn, true, CHIP_FS); xr += gap + wC;
                 DrawChip(dc, xr, iy, wC, "TCC", T.TcCutLevel, CTc, TcDuty, T.TcOn, false, CHIP_FS);
             }
+        }
+
+        // ABS / TC / TCC chips in one row, spread across the column width (graph layout: below the fuel strip)
+        void DrawAidsRow(DrawingContext dc, double x, double y, double w)
+        {
+            double wA = ChipW("ABS", true, CHIP_FS), wT = ChipW("TC", true, CHIP_FS), wC = ChipW("TCC", false, CHIP_FS);
+            double gap = (w - wA - wT - wC) / 2;
+            double xr = x + wA;
+            DrawChip(dc, xr, y, wA, "ABS", T.AbsLevel, CAbs, AbsDuty, T.AbsOn, true, CHIP_FS); xr += gap + wT;
+            DrawChip(dc, xr, y, wT, "TC", T.TcLevel, CTc, TcDuty, T.TcOn, true, CHIP_FS); xr += gap + wC;
+            DrawChip(dc, xr, y, wC, "TCC", T.TcCutLevel, CTc, TcDuty, T.TcOn, false, CHIP_FS);
         }
 
         // one line of the fuel card: label on the left, value (and unit) right-aligned
@@ -697,7 +701,7 @@ namespace EvoHud
         IntPtr hwnd;
         // size: 0.4x .. 3x of the base layout (644 x 162 px)
         const double MinScale = 0.4, MaxScale = 3.0;
-        const string Ver = "1.1.1";
+        const string Ver = "1.1.2";
         double scale = 1.0;
         bool resizing;
         readonly List<WF.ToolStripMenuItem> miSizes = new List<WF.ToolStripMenuItem>();
