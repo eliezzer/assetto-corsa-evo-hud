@@ -21,12 +21,26 @@ Grab `EvoHud-v1.1-windows.zip` from the [Releases](../../releases) page, extract
 3. The HUD only shows while you are driving. It hides in menus, replays, pause, while parked in the pit box (setup screen) and when the game is not the foreground window.
 4. A red "E" icon appears in the system tray (next to the clock). Right-click it for:
    - **Unlock / Lock position**: unlock to drag the HUD (also `Ctrl+Shift+L`, or double-click the tray icon).
-   - **Reset position**, **Demo mode**, **Hide when not driving**, **Show clutch**, **Quit**.
+   - **Settings...**, **Size**, **Reset position**, **Demo mode**, **Hide when not driving**, **Quit**.
 
-**No clutch pedal?** Untick **Show clutch** in the tray menu (or set `ShowClutch=0`). With an automatic clutch the game moves the clutch value by itself, so the blue bar would look stuck. The bar and its graph line disappear and the other two bars re-center.
+**No clutch pedal?** Untick **Clutch** in **Settings...** (or set `ShowClutch=0`). With an automatic clutch the game moves the clutch value by itself, so the blue bar would look stuck. The bar and its graph line disappear and the other two bars re-center.
 
 To start it with Windows, put a shortcut to `EvoHud.exe` in the Startup folder (`Win+R`, then `shell:startup`).
 
+## Choose what to see
+
+Right-click the tray icon and pick **Settings...** (or run `EvoHud.exe --settings`). Tick only what you want on the HUD. The HUD reflows by itself: hidden blocks take no space and the overlay shrinks to fit. Everything applies instantly, is saved, and the HUD shows demo data while the window is open so you can see what each option does.
+
+| Group | Options |
+|---|---|
+| Pedals | Input graph, pedal bars, clutch (bar and graph line), ABS / TC / TCC levels and activity |
+| Dash | Gear, speed, shift lights, steering wheel |
+| Fuel | Fuel in the tank, consumption per lap, laps remaining |
+| Appearance | **Size** (40% to 300%) and **transparency** sliders, plus **Reset to defaults** |
+
+Without the input graph, the pedal bars, the ABS / TC / TCC chips and the fuel lines sit side by side in one compact row.
+
+The window follows your Windows language (Portuguese or English).
 ## Resize
 
 Pick the size you want, from 40% to 300% of the default. The size is saved and restored next time.
@@ -49,7 +63,8 @@ You can also set it by hand with `Scale` in `settings.ini` (for example `Scale=1
 | `ColorClutch` / `ColorBrake` / `ColorThrottle` | blue / red / green | Pedal colors |
 | `ColorAbs` / `ColorTc` | orange / yellow | Color while ABS / TC are cutting in |
 | `ColorShiftA` / `ColorShiftB` | red / dark | Shift-point flash colors |
-| `ShowGraph`, `ShowBars`, `ShowClutch`, `ShowGear`, `ShowWheel`, `ShowFuel`, `AidColors` | `1` | Turn parts of the HUD on or off |
+| `ShowGraph`, `ShowBars`, `ShowClutch`, `ShowAids`, `ShowGear`, `ShowSpeed`, `ShowShiftLights`, `ShowWheel`, `ShowFuel`, `ShowFuelPerLap`, `ShowLapsLeft` | `1` | Show or hide each part (easier from the Settings window) |
+| `AidColors` | `1` | Recolor pedals while ABS / TC are cutting in |
 | `AutoHide`, `HideInPitBox`, `HideWhenGameNotFocused` | `1` | Auto-hide rules |
 
 ## Change the steering wheel

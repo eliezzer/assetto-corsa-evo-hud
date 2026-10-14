@@ -21,10 +21,24 @@ Baixe o `EvoHud-v1.1-windows.zip` na página de [Releases](../../releases), extr
 3. O HUD aparece só enquanto você está pilotando. Some em menus, replay, pausa, parado no box (setup) e quando o jogo não está em primeiro plano.
 4. Ícone "E" na bandeja do sistema (perto do relógio), clique direito:
    - **Unlock / Lock position**: destrava para arrastar (também `Ctrl+Shift+L` ou duplo clique no ícone).
-   - **Reset position**, **Demo mode**, **Hide when not driving**, **Show clutch**, **Quit**.
+   - **Configurações...**, **Tamanho**, **Restaurar posição**, **Modo demonstração**, **Esconder quando não está pilotando**, **Sair**.
 
-**Sem pedal de embreagem?** Desmarque **Show clutch** no menu da bandeja (ou use `ShowClutch=0`). Com embreagem automática o jogo mexe no valor da embreagem sozinho, e a barra azul parece travada. A barra e a linha dela no gráfico somem e as outras duas barras se centralizam.
+**Sem pedal de embreagem?** Desmarque **Embreagem** em **Configurações...** (ou use `ShowClutch=0`). Com embreagem automática o jogo mexe no valor da embreagem sozinho, e a barra azul parece travada. A barra e a linha dela no gráfico somem e as outras duas barras se centralizam.
 
+## Escolher o que ver
+
+Clique com o botão direito no ícone da bandeja e escolha **Configurações...** (ou rode `EvoHud.exe --settings`). Marque só o que você quer no HUD. Ele se reorganiza sozinho: o que for escondido não ocupa espaço e o overlay encolhe para caber. Tudo vale na hora, fica salvo, e o HUD mostra dados de demonstração enquanto a janela está aberta, para você ver o efeito de cada opção.
+
+| Grupo | Opções |
+|---|---|
+| Pedais | Gráfico dos pedais, barras dos pedais, embreagem (barra e linha do gráfico), níveis e atuação de ABS / TC / TCC |
+| Painel | Marcha, velocidade, luzes de troca, volante |
+| Combustível | Combustível no tanque, consumo por volta, voltas restantes |
+| Aparência | Controles de **tamanho** (40% a 300%) e de **transparência**, e **Restaurar padrões** |
+
+Sem o gráfico dos pedais, as barras, as caixinhas de ABS / TC / TCC e as linhas de combustível ficam lado a lado numa linha compacta.
+
+A janela segue o idioma do seu Windows (português ou inglês).
 ## Redimensionar
 
 Escolha o tamanho que quiser, de 40% a 300% do padrão. O tamanho é salvo e volta igual na próxima vez.
@@ -47,7 +61,8 @@ Também dá para definir à mão com `Scale` no `settings.ini` (por exemplo `Sca
 | `ColorClutch` / `ColorBrake` / `ColorThrottle` | azul / vermelho / verde | Cores dos pedais |
 | `ColorAbs` / `ColorTc` | laranja / amarelo | Cor quando ABS/TC atuam |
 | `ColorShiftA` / `ColorShiftB` | vermelho / apagado | Pisca de troca de marcha |
-| `ShowGraph`, `ShowBars`, `ShowClutch`, `ShowGear`, `ShowWheel`, `ShowFuel`, `AidColors` | `1` | Liga/desliga partes do HUD |
+| `ShowGraph`, `ShowBars`, `ShowClutch`, `ShowAids`, `ShowGear`, `ShowSpeed`, `ShowShiftLights`, `ShowWheel`, `ShowFuel`, `ShowFuelPerLap`, `ShowLapsLeft` | `1` | Mostra ou esconde cada parte (mais fácil pela janela de Configurações) |
+| `AidColors` | `1` | Recolore os pedais enquanto ABS / TC atuam |
 | `AutoHide`, `HideInPitBox`, `HideWhenGameNotFocused` | `1` | Regras de esconder |
 
 ## Trocar o volante

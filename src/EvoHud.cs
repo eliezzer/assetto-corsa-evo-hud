@@ -8,6 +8,7 @@ using System.IO;
 using System.IO.MemoryMappedFiles;
 using System.Runtime.InteropServices;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media;
@@ -279,20 +280,36 @@ namespace EvoHud
         }
     }
 
+    // UI language: Portuguese when Windows is in Portuguese, English otherwise.
+    public static class L
+    {
+        static readonly bool Pt = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "pt";
+        public static string T(string en, string pt) { return Pt ? pt : en; }
+    }
     // ------------------------------------------------------------------ HUD drawing
     public class HudView : FrameworkElement
     {
-        public const double W = 644, H = 162, H_NOFUEL = 128;
         const int N = 420;                       // history samples (~7 s at 60 Hz)
+        const double PAD = 12, ROW = 104, STRIP = 28, VGAP = 8, HGAP = 14, CHIPROW = 20;
+        const double FUEL_W = 112, PERLAP_W = 126, LAPS_W = 100, COMPACT_FUEL_W = 128;
 
         public Tele T = new Tele();
         public bool Unlocked;
         public double AbsDuty, TcDuty;           // 0..1 smoothed share of time the aid is cutting in
         public double LapsLeft, PerLap;          // computed by the model
-        public bool ShowGraph = true, ShowBars = true, ShowClutch = true, ShowGear = true,
-                    ShowWheel = true, ShowFuel = true, AidColors = true, InvertSteer;
+
+        // what to show (Settings window / settings.ini); Relayout() reflows the HUD after any change
+        public bool ShowGraph = true, ShowBars = true, ShowClutch = true, ShowAids = true,
+                    ShowGear = true, ShowSpeed = true, ShowShiftLights = true, ShowWheel = true,
+                    ShowFuel = true, ShowFuelPerLap = true, ShowLapsLeft = true,
+                    AidColors = true, InvertSteer;
         public Color CClutch, CBrake, CThrottle, CAbs, CTc, CShiftA, CShiftB;
         public ImageSource Wheel;
+
+        // computed by Relayout()
+        double colW, colX, colY, colH, contentH, graphW, aidsW, gearX, wheelX, wheelS;
+        int nBars;
+        bool rowAids, rowMain, rowFuel, hasCol, hasGear, nothing, compact;
 
         readonly float[] hGas = new float[N], hBrk = new float[N], hClu = new float[N];
         readonly bool[] hAbs = new bool[N], hTc = new bool[N];
@@ -301,8 +318,55 @@ namespace EvoHud
 
         public HudView()
         {
-            Width = W; Height = H; SnapsToDevicePixels = false;
+            SnapsToDevicePixels = false;
             RenderOptions.SetBitmapScalingMode(this, BitmapScalingMode.HighQuality);   // smooth wheel downscale/rotation
+            Relayout();
+        }
+
+        // Lays the visible blocks out left to right: [graph + bars (+ fuel strip below)] [gear/speed] [wheel].
+        // Hidden blocks take no space; the HUD shrinks to fit.
+        public void Relayout()
+        {
+            nBars = ShowBars ? (ShowClutch ? 3 : 2) : 0;
+            double barsW = nBars > 0 ? 22 * nBars - 6 : 0;
+            bool fuelAny = ShowFuel || ShowFuelPerLap || ShowLapsLeft;
+            hasGear = ShowGear || ShowSpeed || ShowShiftLights;
+            rowAids = false;
+            // With the graph: [graph + bars] with the fuel strip below (chips live inside the graph).
+            // Without it: bars, ABS/TC/TCC chips and fuel sit side by side, so there is no wide empty strip.
+            // (fuel alone next to the dash/wheel also stacks, otherwise a 28 px strip would float in a 104 px row)
+            compact = !ShowGraph && (ShowBars || ShowAids || (fuelAny && (hasGear || ShowWheel)));
+            if (compact)
+            {
+                aidsW = ShowAids ? Math.Max(ChipW("ABS", 0, true), ChipW("TC", 0, true)) : 0;
+                int blocks = (nBars > 0 ? 1 : 0) + (ShowAids ? 1 : 0) + (fuelAny ? 1 : 0);
+                rowMain = true; rowFuel = false;
+                colW = barsW + aidsW + (fuelAny ? COMPACT_FUEL_W : 0) + 12 * (blocks - 1);
+                graphW = 0;
+            }
+            else
+            {
+                rowMain = ShowGraph || ShowBars;
+                rowFuel = fuelAny;
+                double wMain = (ShowGraph ? 300 : 0) + (ShowGraph && ShowBars ? 10 : 0) + barsW;
+                double wFuel = rowFuel ? 20 + (ShowFuel ? FUEL_W : 0) + (ShowFuelPerLap ? PERLAP_W : 0) + (ShowLapsLeft ? LAPS_W : 0) : 0;
+                colW = Math.Max(wMain, wFuel);
+                graphW = ShowGraph ? colW - (ShowBars ? barsW + 10 : 0) : 0;   // graph absorbs any extra width
+            }
+
+            int rows = (rowMain ? 1 : 0) + (rowFuel ? 1 : 0);
+            colH = (rowAids ? CHIPROW : 0) + (rowMain ? ROW : 0) + (rowFuel ? STRIP : 0) + (rows > 1 ? VGAP * (rows - 1) : 0);
+            hasCol = rows > 0;
+            bool right = hasGear || ShowWheel;
+            contentH = Math.Max(colH, right ? ROW : 0);
+            nothing = !hasCol && !right;
+            if (nothing) { Width = 250; Height = 52; return; }
+
+            colX = PAD; colY = PAD + (contentH - colH) / 2;
+            double x = PAD + (hasCol ? colW : 0);
+            if (hasGear) { gearX = x + (hasCol ? HGAP : 0); x = gearX + 92; }
+            if (ShowWheel) { wheelX = x + (hasGear ? 8 : (hasCol ? HGAP : 0)); wheelS = Math.Min(136, contentH + 8); x = wheelX + wheelS; }
+            Width = x + PAD; Height = contentH + 2 * PAD;
         }
 
         public void Push()
@@ -378,107 +442,179 @@ namespace EvoHud
         {
             Brush white = Br(255, 245, 245, 245), gray = Br(255, 140, 140, 150);
             dc.DrawRoundedRectangle(Br(235, 14, 14, 18), Unlocked ? new Pen(Br(255, 255, 200, 0), 1.5) { DashStyle = DashStyles.Dash } : null,
-                new Rect(0, 0, W, Height), 6, 6);
+                new Rect(0, 0, Width, Height), 6, 6);
             dc.DrawRectangle(Br(255, 225, 6, 0), null, new Rect(0, 0, 3, Height));
 
-            // --- input graph
-            double gx = 12, gy = 12, gw = 300, gh = 104;
-            if (ShowGraph)
+            if (nothing)
             {
-                dc.DrawRoundedRectangle(Br(10, 255, 255, 255), null, new Rect(gx, gy, gw, gh), 3, 3);
-                var grid = new Pen(Br(22, 255, 255, 255), 1);
-                for (int i = 0; i <= 4; i++) dc.DrawLine(grid, new Point(gx, gy + gh * i / 4), new Point(gx + gw, gy + gh * i / 4));
-                if (ShowClutch) dc.DrawGeometry(null, new Pen(Br(CClutch), 1.6), Line(hClu, null, gx, gy, gw, gh));
-                dc.DrawGeometry(null, new Pen(Br(CBrake), 1.8), Line(hBrk, null, gx, gy, gw, gh));
-                dc.DrawGeometry(null, new Pen(Br(CThrottle), 1.8), Line(hGas, null, gx, gy, gw, gh));
-                if (AidColors)
+                Text(dc, "Nothing selected", 13, white, true, Width / 2, 8, 1);
+                Text(dc, "Tray icon > Settings", 10, gray, false, Width / 2, 28, 1);
+                DrawUnlocked(dc);
+                return;
+            }
+
+            double y = colY;
+            if (compact) DrawCompact(dc, colX, y);
+            else
+            {
+                if (rowMain)
                 {
-                    dc.DrawGeometry(null, new Pen(Br(CAbs), 3.0), Line(hBrk, hAbs, gx, gy, gw, gh));
-                    dc.DrawGeometry(null, new Pen(Br(CTc), 3.0), Line(hGas, hTc, gx, gy, gw, gh));
+                    if (ShowGraph) DrawGraph(dc, colX, y, graphW, ROW);
+                    if (ShowBars) DrawBars(dc, colX + (ShowGraph ? graphW + 10 : 0), y, ROW);
+                    y += ROW + VGAP;
                 }
-                // ABS / TC chips: brightness follows how often the aid is cutting in
-                // and show the car's ABS / TC / TCC levels in the same chips
-                double cx0 = gx + gw - 4;
-                cx0 -= DrawChip(dc, cx0, gy + 4, "TCC", T.TcCutLevel, CTc, TcDuty, T.TcOn, false) + 4;
-                cx0 -= DrawChip(dc, cx0, gy + 4, "TC", T.TcLevel, CTc, TcDuty, T.TcOn, true) + 4;
-                DrawChip(dc, cx0, gy + 4, "ABS", T.AbsLevel, CAbs, AbsDuty, T.AbsOn, true);
-                if (T.Note.Length > 0) Text(dc, T.Note, 10, gray, true, gx + 6, gy + gh - 16, 0);
+                if (rowFuel) DrawFuel(dc, colX, y, colW);
             }
+            if (hasGear) DrawGear(dc, white, gray);
+            if (ShowWheel) DrawWheel(dc);
+            DrawUnlocked(dc);
+        }
 
-            // --- pedal bars
-            if (ShowBars)
+        void DrawGraph(DrawingContext dc, double gx, double gy, double gw, double gh)
+        {
+            dc.DrawRoundedRectangle(Br(10, 255, 255, 255), null, new Rect(gx, gy, gw, gh), 3, 3);
+            var grid = new Pen(Br(22, 255, 255, 255), 1);
+            for (int i = 0; i <= 4; i++) dc.DrawLine(grid, new Point(gx, gy + gh * i / 4), new Point(gx + gw, gy + gh * i / 4));
+            if (ShowClutch) dc.DrawGeometry(null, new Pen(Br(CClutch), 1.6), Line(hClu, null, gx, gy, gw, gh));
+            dc.DrawGeometry(null, new Pen(Br(CBrake), 1.8), Line(hBrk, null, gx, gy, gw, gh));
+            dc.DrawGeometry(null, new Pen(Br(CThrottle), 1.8), Line(hGas, null, gx, gy, gw, gh));
+            if (AidColors)
             {
-                double bx = 322, by = 12, bh = 104;
-                // without the clutch bar, center the two remaining bars in the same space
-                double off = ShowClutch ? 0 : 11;
-                if (ShowClutch) Pedal(dc, bx, by, bh, T.Clutch, CClutch, false);
-                Pedal(dc, bx + 22 - off, by, bh, T.Brake, CBrake, T.AbsOn);
-                Pedal(dc, bx + 44 - off, by, bh, T.Gas, CThrottle, T.TcOn);
+                dc.DrawGeometry(null, new Pen(Br(CAbs), 3.0), Line(hBrk, hAbs, gx, gy, gw, gh));
+                dc.DrawGeometry(null, new Pen(Br(CTc), 3.0), Line(hGas, hTc, gx, gy, gw, gh));
             }
-
-            // --- gear + speed + shift lights
-            if (ShowGear)
+            if (ShowAids)
             {
-                double cx = 396 + 46;
-                bool tall = Height >= 150;
-                double r = T.MaxRpm > 0 ? (double)T.Rpm / T.MaxRpm : 0;
-                // shift point: whole bar flashes, alternating the two shift colors
-                bool flashA = (DateTime.UtcNow.Millisecond / 100) % 2 == 0;
+                // right-aligned in the graph corner
+                double wA = ChipW("ABS", T.AbsLevel, true), wT = ChipW("TC", T.TcLevel, true), wC = ChipW("TCC", T.TcCutLevel, false);
+                double xr = gx + gw - 4;
+                DrawChip(dc, xr, gy + 4, wC, "TCC", T.TcCutLevel, CTc, TcDuty, T.TcOn, false); xr -= wC + 4;
+                DrawChip(dc, xr, gy + 4, wT, "TC", T.TcLevel, CTc, TcDuty, T.TcOn, true); xr -= wT + 4;
+                DrawChip(dc, xr, gy + 4, wA, "ABS", T.AbsLevel, CAbs, AbsDuty, T.AbsOn, true);
+            }
+            if (T.Note.Length > 0) Text(dc, T.Note, 10, Br(255, 140, 140, 150), true, gx + 6, gy + gh - 16, 0);
+        }
+
+        // no graph: [pedal bars] [ABS / TC / TCC chips stacked] [fuel lines stacked], all one row tall
+        void DrawCompact(DrawingContext dc, double x, double y)
+        {
+            if (nBars > 0) { DrawBars(dc, x, y, ROW); x += 22 * nBars - 6 + 12; }
+            if (ShowAids)
+            {
+                double ch = 16, gap = 6, top = y + (ROW - (3 * ch + 2 * gap)) / 2;
+                DrawChip(dc, x + aidsW, top, aidsW, "ABS", T.AbsLevel, CAbs, AbsDuty, T.AbsOn, true);
+                DrawChip(dc, x + aidsW, top + ch + gap, aidsW, "TC", T.TcLevel, CTc, TcDuty, T.TcOn, true);
+                DrawChip(dc, x + aidsW, top + 2 * (ch + gap), aidsW, "TCC", T.TcCutLevel, CTc, TcDuty, T.TcOn, false);
+                x += aidsW + 12;
+            }
+            int n = (ShowFuel ? 1 : 0) + (ShowFuelPerLap ? 1 : 0) + (ShowLapsLeft ? 1 : 0);
+            if (n > 0)
+            {
+                dc.DrawRoundedRectangle(Br(10, 255, 255, 255), null, new Rect(x, y, COMPACT_FUEL_W, ROW), 3, 3);
+                FuelItems(dc, x + 10, y + (ROW - n * 30) / 2, true);
+            }
+        }
+
+        void DrawBars(DrawingContext dc, double bx, double by, double bh)
+        {
+            double x = bx;
+            if (ShowClutch) { Pedal(dc, x, by, bh, T.Clutch, CClutch, false); x += 22; }
+            Pedal(dc, x, by, bh, T.Brake, CBrake, T.AbsOn); x += 22;
+            Pedal(dc, x, by, bh, T.Gas, CThrottle, T.TcOn);
+        }
+
+        void DrawGear(DrawingContext dc, Brush white, Brush gray)
+        {
+            double cx = gearX + 46;
+            bool tall = contentH >= 120, both = ShowGear && ShowSpeed;
+            double r = T.MaxRpm > 0 ? (double)T.Rpm / T.MaxRpm : 0;
+            // shift point: whole bar flashes, alternating the two shift colors
+            bool flashA = (DateTime.UtcNow.Millisecond / 100) % 2 == 0;
+            if (ShowShiftLights)
+            {
+                double ly = (ShowGear || ShowSpeed) ? PAD : (Height - 6) / 2;
                 for (int i = 0; i < 10; i++)
                 {
                     bool on = T.ShiftUp || r >= 0.72 + 0.028 * i;
                     Color lc = T.ShiftUp ? (flashA ? CShiftA : CShiftB)
                         : (i < 4 ? Color.FromRgb(40, 220, 90) : (i < 7 ? Color.FromRgb(255, 210, 0) : Color.FromRgb(255, 40, 30)));
-                    dc.DrawRoundedRectangle(on ? Br(lc) : Br(255, 40, 40, 48), null, new Rect(396 + i * 9.4, 12, 7.4, 6), 1.5, 1.5);
+                    dc.DrawRoundedRectangle(on ? Br(lc) : Br(255, 40, 40, 48), null, new Rect(gearX + i * 9.4, ly, 7.4, 6), 1.5, 1.5);
                 }
+            }
+            double lightsPush = ShowShiftLights ? 4 : 0;
+            if (ShowGear)
+            {
                 string gs = T.Gear <= 0 ? "R" : (T.Gear == 1 ? "N" : (T.Gear - 1).ToString(CultureInfo.InvariantCulture));
                 Brush gearBrush = (T.ShiftUp && flashA) ? Br(CShiftA) : ((T.Gear == 1) ? Br(255, 225, 6, 0) : white);
-                double gearSize = tall ? 64 : 54, spSize = tall ? 46 : 32, gearY = tall ? 14 : 14, spY = Height - spSize * 1.2 - 6;
+                double gearSize = both ? (tall ? 64 : 54) : (tall ? 84 : 66);
+                double gearY = both ? 14 : (Height - gearSize * 1.2) / 2 + lightsPush;
                 Text(dc, gs, gearSize, gearBrush, true, cx, gearY, 1);
+            }
+            if (ShowSpeed)
+            {
+                double spSize = both ? (tall ? 46 : 32) : (tall ? 58 : 42);
+                double spY = both ? Height - spSize * 1.2 - 6 : (Height - spSize * 1.2) / 2 + lightsPush;
                 string sp = Math.Max(0, (int)Math.Round(T.SpeedKmh)).ToString(CultureInfo.InvariantCulture);
                 double w1 = TextWidth(sp, spSize, true), w2 = TextWidth(" km/h", 11, false);
                 double sx = cx - (w1 + w2) / 2;
                 Text(dc, sp, spSize, white, true, sx, spY, 0);
                 Text(dc, " km/h", 11, gray, false, sx + w1, spY + spSize * 0.82 - 11, 0);
             }
+        }
 
-            // --- steering wheel
-            if (ShowWheel)
-            {
-                double s = Math.Min(136, Height - 16), wx = 496, wy = (Height - s) / 2, cx2 = wx + s / 2, cy2 = wy + s / 2;
-                double deg = InvertSteer ? -T.SteerDeg : T.SteerDeg;
-                dc.PushTransform(new RotateTransform(deg, cx2, cy2));
-                if (Wheel != null) dc.DrawImage(Wheel, new Rect(wx, wy, s, s));
-                else dc.DrawEllipse(null, new Pen(Br(255, 120, 120, 128), 9), new Point(cx2, cy2), 42, 42);
-                dc.Pop();
-            }
+        void DrawWheel(DrawingContext dc)
+        {
+            double s = wheelS, wy = (Height - s) / 2, cx2 = wheelX + s / 2, cy2 = wy + s / 2;
+            double deg = InvertSteer ? -T.SteerDeg : T.SteerDeg;
+            dc.PushTransform(new RotateTransform(deg, cx2, cy2));
+            if (Wheel != null) dc.DrawImage(Wheel, new Rect(wheelX, wy, s, s));
+            else dc.DrawEllipse(null, new Pen(Br(255, 120, 120, 128), 9), new Point(cx2, cy2), s * 0.31, s * 0.31);
+            dc.Pop();
+        }
 
-            // --- fuel strip: one line under the pedal graph and bars
+        // fuel strip: one line with the fuel items that are switched on
+        void DrawFuel(DrawingContext dc, double x, double y, double w)
+        {
+            dc.DrawRoundedRectangle(Br(10, 255, 255, 255), null, new Rect(x, y, w, STRIP), 3, 3);
+            FuelItems(dc, x + 10, y, false);
+        }
+
+        // the enabled fuel items, side by side (strip) or stacked (compact)
+        void FuelItems(DrawingContext dc, double x, double y, bool vertical)
+        {
             if (ShowFuel)
             {
-                double sy = 124, sh = 28;
-                dc.DrawRoundedRectangle(Br(10, 255, 255, 255), null, new Rect(12, sy, 370, sh), 3, 3);
-                FuelItem(dc, 22, sy, "FUEL", T.Fuel > 0 ? T.Fuel.ToString("0.0", CultureInfo.InvariantCulture) : "--", "L");
-                FuelItem(dc, 144, sy, "PER LAP", PerLap > 0 ? PerLap.ToString("0.00", CultureInfo.InvariantCulture) : "--", "L");
-                FuelItem(dc, 270, sy, "LAPS", LapsLeft > 0 ? LapsLeft.ToString("0.0", CultureInfo.InvariantCulture) : "--", "");
+                FuelItem(dc, x, y, "FUEL", T.Fuel > 0 ? T.Fuel.ToString("0.0", CultureInfo.InvariantCulture) : "--", "L");
+                if (vertical) y += 30; else x += FUEL_W;
             }
-
-            if (Unlocked)
+            if (ShowFuelPerLap)
             {
-                Rect banner = new Rect(W / 2 - 235, Height / 2 - 12, 470, 24);
-                dc.DrawRoundedRectangle(Br(235, 255, 200, 0), null, banner, 4, 4);
-                Text(dc, "UNLOCKED  ·  drag to move  ·  scroll or drag corner to resize  ·  Ctrl+Shift+L to lock", 10, Br(255, 10, 10, 10), true, W / 2, banner.Y + 6, 1);
-                // resize grip (bottom-right corner)
-                var grip = new StreamGeometry();
-                using (StreamGeometryContext c = grip.Open())
-                {
-                    c.BeginFigure(new Point(W - 4, Height - 26), true, true);
-                    c.LineTo(new Point(W - 4, Height - 4), true, false);
-                    c.LineTo(new Point(W - 26, Height - 4), true, false);
-                }
-                grip.Freeze();
-                dc.DrawGeometry(Br(255, 255, 200, 0), null, grip);
+                FuelItem(dc, x, y, "PER LAP", PerLap > 0 ? PerLap.ToString("0.00", CultureInfo.InvariantCulture) : "--", "L");
+                if (vertical) y += 30; else x += PERLAP_W;
             }
+            if (ShowLapsLeft) FuelItem(dc, x, y, "LAPS", LapsLeft > 0 ? LapsLeft.ToString("0.0", CultureInfo.InvariantCulture) : "--", "");
+        }
+
+        void DrawUnlocked(DrawingContext dc)
+        {
+            if (!Unlocked) return;
+            bool wide = Width >= 520;
+            string msg = wide ? "UNLOCKED  ·  drag to move  ·  scroll or drag corner to resize  ·  Ctrl+Shift+L to lock"
+                              : "UNLOCKED  ·  drag / scroll  ·  Ctrl+Shift+L";
+            double bw = Math.Min(wide ? 470 : 260, Width - 16);
+            Rect banner = new Rect(Width / 2 - bw / 2, Height / 2 - 12, bw, 24);
+            dc.DrawRoundedRectangle(Br(235, 255, 200, 0), null, banner, 4, 4);
+            Text(dc, msg, wide ? 10 : 9, Br(255, 10, 10, 10), true, Width / 2, banner.Y + 6, 1);
+            // resize grip (bottom-right corner)
+            var grip = new StreamGeometry();
+            using (StreamGeometryContext c = grip.Open())
+            {
+                c.BeginFigure(new Point(Width - 4, Height - 26), true, true);
+                c.LineTo(new Point(Width - 4, Height - 4), true, false);
+                c.LineTo(new Point(Width - 26, Height - 4), true, false);
+            }
+            grip.Freeze();
+            dc.DrawGeometry(Br(255, 255, 200, 0), null, grip);
         }
 
         void FuelItem(DrawingContext dc, double x, double y, string label, string val, string unit)
@@ -490,19 +626,25 @@ namespace EvoHud
             if (unit.Length > 0) Text(dc, unit, 10, gray, false, vx + TextWidth(val, 18, true) + 2, y + 10, 0);
         }
 
-        // Aid chip, right-aligned at xr: "ABS 4 · 12%". Level 0 shows OFF; brightness follows activity.
-        // Returns the chip width so chips can be laid out right to left.
-        double DrawChip(DrawingContext dc, double xr, double y, string label, int level, Color c, double duty, bool now, bool showDuty)
+        // Aid chip: "ABS 4 · 12%". Level 0 shows OFF; brightness follows how often the aid is cutting in.
+        static string ChipText(string label, int level, double duty, bool showDuty)
         {
             string lv = level < 0 ? "-" : (level == 0 ? "OFF" : level.ToString(CultureInfo.InvariantCulture));
             string txt = label + " " + lv;
             if (showDuty) txt += "  ·  " + ((int)Math.Round(duty * 100)).ToString(CultureInfo.InvariantCulture) + "%";
-            double w = TextWidth(txt, 10, true) + 12;
+            return txt;
+        }
+
+        // width for the widest text ("100%") so the chips don't jitter as the percentage changes
+        double ChipW(string label, int level, bool showDuty) { return TextWidth(ChipText(label, level, 1.0, showDuty), 10, true) + 12; }
+
+        // right edge at xr, fixed width w
+        void DrawChip(DrawingContext dc, double xr, double y, double w, string label, int level, Color c, double duty, bool now, bool showDuty)
+        {
             double k = now ? 1.0 : Math.Min(1, duty * 1.6);
             Color fill = Mix(Color.FromRgb(36, 36, 44), c, k);
             dc.DrawRoundedRectangle(Br(fill), null, new Rect(xr - w, y, w, 16), 3, 3);
-            Text(dc, txt, 10, k > 0.55 ? Br(255, 10, 10, 10) : Br(255, 200, 200, 208), true, xr - w / 2, y + 1.5, 1);
-            return w;
+            Text(dc, ChipText(label, level, duty, showDuty), 10, k > 0.55 ? Br(255, 10, 10, 10) : Br(255, 200, 200, 208), true, xr - w / 2, y + 1.5, 1);
         }
     }
 
@@ -521,8 +663,15 @@ namespace EvoHud
         readonly DemoSource demo = new DemoSource();
         readonly DispatcherTimer timer = new DispatcherTimer(DispatcherPriority.Render);
         WF.NotifyIcon tray;
-        WF.ToolStripMenuItem miLock, miDemo, miAutoHide, miClutch;
+        WF.ToolStripMenuItem miLock, miDemo, miAutoHide;
         bool locked = true, useDemo;
+        // Settings window: while it is open the HUD stays visible and shows demo data as a live preview
+        Window settingsWin;
+        bool settingsOpen;
+        DispatcherTimer saveTimer;
+        readonly List<Action> refreshers = new List<Action>();
+        static readonly string[] FlagKeys = { "ShowGraph", "ShowBars", "ShowClutch", "ShowAids", "ShowGear", "ShowSpeed",
+            "ShowShiftLights", "ShowWheel", "ShowFuel", "ShowFuelPerLap", "ShowLapsLeft" };
         // auto-hide outside of driving (menus, replays, pause, setup in the pit box, game not focused)
         bool autoHide, hideInPitBox, hideUnfocused, sawLiveStatus;
         string gameProcess;
@@ -556,11 +705,8 @@ namespace EvoHud
             autoHide = s.Bool("AutoHide", true); hideInPitBox = s.Bool("HideInPitBox", true);
             hideUnfocused = s.Bool("HideWhenGameNotFocused", true); gameProcess = s.Str("GameProcess", "AssettoCorsaEVO");
             ShowActivated = false;
-            view.ShowGraph = s.Bool("ShowGraph", true); view.ShowBars = s.Bool("ShowBars", true);
-            view.ShowClutch = s.Bool("ShowClutch", true); view.ShowGear = s.Bool("ShowGear", true);
-            view.ShowWheel = s.Bool("ShowWheel", true); view.ShowFuel = s.Bool("ShowFuel", true);
             view.AidColors = s.Bool("AidColors", true); view.InvertSteer = s.Bool("InvertSteer", false);
-            view.Height = view.ShowFuel ? HudView.H : HudView.H_NOFUEL;
+            LoadViewFlags();
             view.Wheel = LoadWheel(Path.Combine(dir, s.Str("Wheel", "assets\\wheel.png")));
             double sc = Math.Max(MinScale, Math.Min(MaxScale, s.Num("Scale", 1.0)));
             scale = sc;
@@ -571,7 +717,7 @@ namespace EvoHud
             WindowStartupLocation = WindowStartupLocation.Manual;
             if (double.IsNaN(x) || double.IsNaN(y))
             {
-                x = (SystemParameters.PrimaryScreenWidth - HudView.W * sc) / 2;
+                x = (SystemParameters.PrimaryScreenWidth - view.Width * sc) / 2;
                 y = SystemParameters.PrimaryScreenHeight - view.Height * sc - 40;
             }
             Left = x; Top = y;
@@ -588,6 +734,7 @@ namespace EvoHud
             };
 
             BuildTray();
+            if (Array.IndexOf(Environment.GetCommandLineArgs(), "--settings") >= 0) Loaded += delegate { ShowSettings(); };
             timer.Interval = TimeSpan.FromMilliseconds(16);
             timer.Tick += Tick;
             timer.Start();
@@ -634,7 +781,7 @@ namespace EvoHud
         {
             s = Math.Max(MinScale, Math.Min(MaxScale, Math.Round(s, 3)));
             if (Math.Abs(s - scale) < 0.0005) return;
-            double oldW = HudView.W * scale, oldH = view.Height * scale, newW = HudView.W * s, newH = view.Height * s;
+            double oldW = view.Width * scale, oldH = view.Height * scale, newW = view.Width * s, newH = view.Height * s;
             scale = s;
             view.LayoutTransform = new ScaleTransform(s, s);
             if (keepCenter) { Left -= (newW - oldW) / 2; Top -= (newH - oldH) / 2; }
@@ -652,7 +799,7 @@ namespace EvoHud
         bool OnGrip()
         {
             Point p = Mouse.GetPosition(view);
-            return p.X > HudView.W - 34 && p.Y > view.Height - 34;
+            return p.X > view.Width - 34 && p.Y > view.Height - 34;
         }
 
         void OnMouseDown(object sender, MouseButtonEventArgs e)
@@ -664,7 +811,7 @@ namespace EvoHud
 
         void OnMouseMove(object sender, MouseEventArgs e)
         {
-            if (resizing) { ApplyScale(Mouse.GetPosition(this).X / HudView.W, false); return; }
+            if (resizing) { ApplyScale(Mouse.GetPosition(this).X / view.Width, false); return; }
             if (!locked) Cursor = OnGrip() ? Cursors.SizeNWSE : Cursors.SizeAll;
         }
 
@@ -697,17 +844,19 @@ namespace EvoHud
             ApplyClickThrough();
             if (locked) SaveState();
             else { Activate(); Topmost = false; Topmost = true; }
-            miLock.Text = locked ? "Unlock position (Ctrl+Shift+L)" : "Lock position (Ctrl+Shift+L)";
+            miLock.Text = locked ? L.T("Unlock position (Ctrl+Shift+L)", "Destravar posição (Ctrl+Shift+L)")
+                                 : L.T("Lock position (Ctrl+Shift+L)", "Travar posição (Ctrl+Shift+L)");
             if (locked) { resizing = false; Cursor = Cursors.Arrow; }
-            tray.ShowBalloonTip(2500, "EVO HUD", locked ? "Locked. Position and size saved." :
-                "Unlocked: drag to move, scroll or drag the bottom-right corner to resize. Ctrl+Shift+L (or double-click the tray icon) to lock.",
+            tray.ShowBalloonTip(2500, "EVO HUD", locked ? L.T("Locked. Position and size saved.", "Travado. Posição e tamanho salvos.") :
+                L.T("Unlocked: drag to move, scroll or drag the bottom-right corner to resize. Ctrl+Shift+L (or double-click the tray icon) to lock.",
+                    "Destravado: arraste para mover, use a rodinha ou arraste o canto inferior direito para redimensionar. Ctrl+Shift+L (ou duplo clique no ícone) para travar."),
                 WF.ToolTipIcon.None);
             view.InvalidateVisual();
         }
 
         void ResetPosition()
         {
-            Left = (SystemParameters.PrimaryScreenWidth - HudView.W * scale) / 2;
+            Left = (SystemParameters.PrimaryScreenWidth - view.Width * scale) / 2;
             Top = SystemParameters.PrimaryScreenHeight - view.Height * scale - 40;
             SaveState();
         }
@@ -719,6 +868,146 @@ namespace EvoHud
             cfg.Set("Scale", scale.ToString("0.###", CultureInfo.InvariantCulture));
             cfg.Set("Demo", useDemo ? "1" : "0");
             try { cfg.Save(); } catch { }
+        }
+
+        // ---- what to show / layout ------------------------------------------------------
+        void LoadViewFlags()
+        {
+            view.ShowGraph = cfg.Bool("ShowGraph", true); view.ShowBars = cfg.Bool("ShowBars", true);
+            view.ShowClutch = cfg.Bool("ShowClutch", true); view.ShowAids = cfg.Bool("ShowAids", true);
+            view.ShowGear = cfg.Bool("ShowGear", true); view.ShowSpeed = cfg.Bool("ShowSpeed", true);
+            view.ShowShiftLights = cfg.Bool("ShowShiftLights", true); view.ShowWheel = cfg.Bool("ShowWheel", true);
+            view.ShowFuel = cfg.Bool("ShowFuel", true); view.ShowFuelPerLap = cfg.Bool("ShowFuelPerLap", true);
+            view.ShowLapsLeft = cfg.Bool("ShowLapsLeft", true);
+            view.Relayout();
+        }
+
+        // After a show/hide change: reflow the HUD and keep its center where it was.
+        void LayoutChanged()
+        {
+            double oldW = view.Width * scale, oldH = view.Height * scale;
+            view.Relayout();
+            Left -= (view.Width * scale - oldW) / 2; Top -= (view.Height * scale - oldH) / 2;
+            view.InvalidateVisual();
+            QueueSave();
+        }
+
+        void QueueSave()
+        {
+            if (saveTimer == null)
+            {
+                saveTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(500) };
+                saveTimer.Tick += delegate { saveTimer.Stop(); SaveState(); };
+            }
+            saveTimer.Stop(); saveTimer.Start();
+        }
+
+        void ResetSettings()
+        {
+            double oldW = view.Width * scale, oldH = view.Height * scale;
+            foreach (string k in FlagKeys) cfg.Set(k, "1");
+            LoadViewFlags();
+            Left -= (view.Width * scale - oldW) / 2; Top -= (view.Height * scale - oldH) / 2;
+            ApplyScale(1.0, true);
+            Opacity = 0.94; cfg.Set("Opacity", "0.94");
+            foreach (Action r in refreshers) r();
+            view.InvalidateVisual(); QueueSave();
+        }
+
+        // ---- settings window -------------------------------------------------------------
+        void ShowSettings()
+        {
+            if (settingsWin != null) { settingsWin.Activate(); return; }
+            refreshers.Clear();
+            var w = new Window
+            {
+                Title = L.T("EVO HUD - Settings", "EVO HUD - Configurações"),
+                Width = 400, SizeToContent = SizeToContent.Height, ResizeMode = ResizeMode.NoResize,
+                WindowStartupLocation = WindowStartupLocation.CenterScreen, Topmost = true,
+                Background = new SolidColorBrush(Color.FromRgb(22, 22, 28)), Foreground = Brushes.White,
+                FontFamily = new FontFamily("Segoe UI"), FontSize = 13
+            };
+            var root = new StackPanel { Margin = new Thickness(22, 16, 22, 18) };
+            w.Content = root;
+
+            root.Children.Add(new TextBlock
+            {
+                Text = L.T("Changes apply instantly. The HUD shows demo data while this window is open.",
+                           "As mudanças valem na hora. O HUD mostra dados de demonstração enquanto esta janela estiver aberta."),
+                Foreground = new SolidColorBrush(Color.FromRgb(150, 150, 160)), TextWrapping = TextWrapping.Wrap, FontSize = 12
+            });
+
+            AddSection(root, L.T("PEDALS", "PEDAIS"));
+            AddCheck(root, L.T("Input graph", "Gráfico dos pedais"), "ShowGraph", () => view.ShowGraph, v => view.ShowGraph = v);
+            AddCheck(root, L.T("Pedal bars", "Barras dos pedais"), "ShowBars", () => view.ShowBars, v => view.ShowBars = v);
+            AddCheck(root, L.T("Clutch (bar and graph line)", "Embreagem (barra e linha do gráfico)"), "ShowClutch", () => view.ShowClutch, v => view.ShowClutch = v);
+            AddCheck(root, L.T("ABS / TC / TCC levels and activity", "Níveis e atuação de ABS / TC / TCC"), "ShowAids", () => view.ShowAids, v => view.ShowAids = v);
+
+            AddSection(root, L.T("DASH", "PAINEL"));
+            AddCheck(root, L.T("Gear", "Marcha"), "ShowGear", () => view.ShowGear, v => view.ShowGear = v);
+            AddCheck(root, L.T("Speed", "Velocidade"), "ShowSpeed", () => view.ShowSpeed, v => view.ShowSpeed = v);
+            AddCheck(root, L.T("Shift lights", "Luzes de troca de marcha"), "ShowShiftLights", () => view.ShowShiftLights, v => view.ShowShiftLights = v);
+            AddCheck(root, L.T("Steering wheel", "Volante"), "ShowWheel", () => view.ShowWheel, v => view.ShowWheel = v);
+
+            AddSection(root, L.T("FUEL", "COMBUSTÍVEL"));
+            AddCheck(root, L.T("Fuel in the tank", "Combustível no tanque"), "ShowFuel", () => view.ShowFuel, v => view.ShowFuel = v);
+            AddCheck(root, L.T("Consumption per lap", "Consumo por volta"), "ShowFuelPerLap", () => view.ShowFuelPerLap, v => view.ShowFuelPerLap = v);
+            AddCheck(root, L.T("Laps remaining", "Voltas restantes"), "ShowLapsLeft", () => view.ShowLapsLeft, v => view.ShowLapsLeft = v);
+
+            AddSection(root, L.T("APPEARANCE", "APARÊNCIA"));
+            AddSlider(root, L.T("Size", "Tamanho"), MinScale * 100, MaxScale * 100, () => scale * 100,
+                v => { ApplyScale(v / 100.0, true); QueueSave(); }, v => Math.Round(v) + "%");
+            AddSlider(root, L.T("Transparency (lower = more see-through)", "Transparência (menor = mais transparente)"), 20, 100, () => Opacity * 100,
+                v => { Opacity = v / 100.0; cfg.Set("Opacity", (v / 100.0).ToString("0.##", CultureInfo.InvariantCulture)); QueueSave(); },
+                v => Math.Round(v) + "%");
+
+            var buttons = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right, Margin = new Thickness(0, 18, 0, 0) };
+            var reset = new Button { Content = L.T("Reset to defaults", "Restaurar padrões"), Padding = new Thickness(12, 5, 12, 5), Margin = new Thickness(0, 0, 8, 0) };
+            reset.Click += delegate { ResetSettings(); };
+            var close = new Button { Content = L.T("Close", "Fechar"), Padding = new Thickness(18, 5, 18, 5), IsDefault = true };
+            close.Click += delegate { w.Close(); };
+            buttons.Children.Add(reset); buttons.Children.Add(close);
+            root.Children.Add(buttons);
+
+            w.Closed += delegate { settingsWin = null; settingsOpen = false; SaveState(); };
+            settingsWin = w; settingsOpen = true;
+            w.Show(); w.Activate();
+        }
+
+        static void AddSection(Panel p, string title)
+        {
+            p.Children.Add(new TextBlock
+            {
+                Text = title, FontWeight = FontWeights.Bold, FontSize = 11, Margin = new Thickness(0, 16, 0, 2),
+                Foreground = new SolidColorBrush(Color.FromRgb(225, 6, 0))
+            });
+        }
+
+        void AddCheck(Panel p, string label, string key, Func<bool> get, Action<bool> set)
+        {
+            var cb = new CheckBox { Content = label, IsChecked = get(), Margin = new Thickness(0, 4, 0, 2), Foreground = Brushes.White };
+            RoutedEventHandler h = delegate
+            {
+                bool v = cb.IsChecked == true;
+                set(v); cfg.Set(key, v ? "1" : "0"); LayoutChanged();
+            };
+            cb.Checked += h; cb.Unchecked += h;
+            refreshers.Add(delegate { cb.IsChecked = get(); });
+            p.Children.Add(cb);
+        }
+
+        void AddSlider(Panel p, string label, double min, double max, Func<double> get, Action<double> apply, Func<double, string> fmt)
+        {
+            var head = new DockPanel { Margin = new Thickness(0, 8, 0, 0) };
+            var val = new TextBlock { Foreground = new SolidColorBrush(Color.FromRgb(225, 6, 0)), FontWeight = FontWeights.Bold };
+            DockPanel.SetDock(val, Dock.Right);
+            head.Children.Add(val);
+            head.Children.Add(new TextBlock { Text = label });
+            var sl = new Slider { Minimum = min, Maximum = max, Value = get(), Margin = new Thickness(0, 4, 0, 0), TickFrequency = 5, IsSnapToTickEnabled = true };
+            val.Text = fmt(sl.Value);
+            sl.ValueChanged += delegate { val.Text = fmt(sl.Value); apply(sl.Value); };
+            refreshers.Add(delegate { sl.Value = get(); });
+            p.Children.Add(head); p.Children.Add(sl);
         }
 
         void BuildTray()
@@ -738,11 +1027,14 @@ namespace EvoHud
             }
             catch { tray.Icon = SD.SystemIcons.Application; }
             var menu = new WF.ContextMenuStrip();
-            miLock = new WF.ToolStripMenuItem("Unlock position (Ctrl+Shift+L)", null, delegate { ToggleLock(); });
-            miDemo = new WF.ToolStripMenuItem("Demo mode", null, delegate { useDemo = !useDemo; miDemo.Checked = useDemo; });
+            miLock = new WF.ToolStripMenuItem(L.T("Unlock position (Ctrl+Shift+L)", "Destravar posição (Ctrl+Shift+L)"), null, delegate { ToggleLock(); });
+            miDemo = new WF.ToolStripMenuItem(L.T("Demo mode", "Modo demonstração"), null, delegate { useDemo = !useDemo; miDemo.Checked = useDemo; });
             miDemo.Checked = useDemo;
+            var miSettings = new WF.ToolStripMenuItem(L.T("Settings...", "Configurações..."), null, delegate { ShowSettings(); });
+            miSettings.Font = new SD.Font(menu.Font, SD.FontStyle.Bold);
+            menu.Items.Add(miSettings);
             menu.Items.Add(miLock);
-            var size = new WF.ToolStripMenuItem("Size");
+            var size = new WF.ToolStripMenuItem(L.T("Size", "Tamanho"));
             foreach (int pct in new int[] { 50, 75, 100, 125, 150, 200, 250 })
             {
                 int p = pct;
@@ -750,27 +1042,19 @@ namespace EvoHud
                 size.DropDownItems.Add(mi); miSizes.Add(mi); sizePcts.Add(p);
             }
             size.DropDownItems.Add(new WF.ToolStripSeparator());
-            size.DropDownItems.Add(new WF.ToolStripMenuItem("Bigger (Ctrl+Shift++)", null, delegate { Step(1.1); }));
-            size.DropDownItems.Add(new WF.ToolStripMenuItem("Smaller (Ctrl+Shift+-)", null, delegate { Step(1 / 1.1); }));
+            size.DropDownItems.Add(new WF.ToolStripMenuItem(L.T("Bigger (Ctrl+Shift++)", "Maior (Ctrl+Shift++)"), null, delegate { Step(1.1); }));
+            size.DropDownItems.Add(new WF.ToolStripMenuItem(L.T("Smaller (Ctrl+Shift+-)", "Menor (Ctrl+Shift+-)"), null, delegate { Step(1 / 1.1); }));
             menu.Items.Add(size);
-            menu.Items.Add(new WF.ToolStripMenuItem("Reset position", null, delegate { ResetPosition(); }));
+            menu.Items.Add(new WF.ToolStripMenuItem(L.T("Reset position", "Restaurar posição"), null, delegate { ResetPosition(); }));
             menu.Items.Add(miDemo);
-            miAutoHide = new WF.ToolStripMenuItem("Hide when not driving", null, delegate
+            miAutoHide = new WF.ToolStripMenuItem(L.T("Hide when not driving", "Esconder quando não está pilotando"), null, delegate
             {
                 autoHide = !autoHide; miAutoHide.Checked = autoHide;
                 cfg.Set("AutoHide", autoHide ? "1" : "0"); SaveState();
             });
             miAutoHide.Checked = autoHide;
             menu.Items.Add(miAutoHide);
-            // for cars/setups without a clutch pedal (auto clutch makes the value move on its own)
-            miClutch = new WF.ToolStripMenuItem("Show clutch (bar and graph line)", null, delegate
-            {
-                view.ShowClutch = !view.ShowClutch; miClutch.Checked = view.ShowClutch;
-                cfg.Set("ShowClutch", view.ShowClutch ? "1" : "0"); SaveState(); view.InvalidateVisual();
-            });
-            miClutch.Checked = view.ShowClutch;
-            menu.Items.Add(miClutch);
-            menu.Items.Add(new WF.ToolStripMenuItem("Quit", null, delegate { Close(); }));
+            menu.Items.Add(new WF.ToolStripMenuItem(L.T("Quit", "Sair"), null, delegate { Close(); }));
             tray.ContextMenuStrip = menu;
             tray.DoubleClick += delegate { ToggleLock(); };
             tray.Visible = true;
@@ -780,7 +1064,7 @@ namespace EvoHud
         void Tick(object sender, EventArgs e)
         {
             Tele t = view.T;
-            if (useDemo) demo.Read(t);
+            if (useDemo || settingsOpen) demo.Read(t);
             else
             {
                 bool ok = evo.Read(t);
@@ -799,7 +1083,7 @@ namespace EvoHud
 
         bool ShouldShow(Tele t)
         {
-            if (!locked || useDemo || !autoHide) return true;
+            if (!locked || useDemo || !autoHide || settingsOpen) return true;
             if (!t.Live) return false;                          // game closed, loading or frozen
             if (t.Status == 2) sawLiveStatus = true;
             if (t.Status == 1 || t.Status == 3) return false;   // replay / pause
