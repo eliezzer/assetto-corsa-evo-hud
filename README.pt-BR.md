@@ -12,7 +12,7 @@ Lê a memória compartilhada do jogo (`Local\acevo_pmf_physics` / `Local\acevo_p
 
 ## Baixar
 
-Baixe o `EvoHud-v1.1-windows.zip` na página de [Releases](../../releases), extraia e rode o `EvoHud.exe`. Mantenha a pasta `assets` ao lado do `.exe`.
+Baixe o `EvoHud-v1.1.1-windows.zip` na página de [Releases](../../releases), extraia e rode o `EvoHud.exe`. Mantenha a pasta `assets` ao lado do `.exe`.
 
 ## Usar
 

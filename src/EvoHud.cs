@@ -697,7 +697,7 @@ namespace EvoHud
         IntPtr hwnd;
         // size: 0.4x .. 3x of the base layout (644 x 162 px)
         const double MinScale = 0.4, MaxScale = 3.0;
-        const string Ver = "1.1";
+        const string Ver = "1.1.1";
         double scale = 1.0;
         bool resizing;
         readonly List<WF.ToolStripMenuItem> miSizes = new List<WF.ToolStripMenuItem>();

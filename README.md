@@ -12,7 +12,7 @@ It reads the game's shared memory directly (`Local\acevo_pmf_physics` / `Local\a
 
 ## Download
 
-Grab `EvoHud-v1.1-windows.zip` from the [Releases](../../releases) page, extract it and run `EvoHud.exe`. Keep the `assets` folder next to the `.exe` (it holds the wheel image).
+Grab `EvoHud-v1.1.1-windows.zip` from the [Releases](../../releases) page, extract it and run `EvoHud.exe`. Keep the `assets` folder next to the `.exe` (it holds the wheel image).
 
 ## Use
 
