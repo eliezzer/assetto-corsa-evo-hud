@@ -328,7 +328,7 @@ namespace SimracingBR
         }
 
         const double CAP = 0.70;                 // digit height / font size (Bahnschrift)
-        double GearColW { get { return ShowSpeed ? 112 : 92; } }
+        double GearColW { get { return ShowSpeed ? 124 : 92; } }
 
         // Draws a number centered on cx with the top of its digits at `top` (not the top of the text box),
         // so gear and speed line up on the same axis. Returns the bottom of the digits.
@@ -344,7 +344,7 @@ namespace SimracingBR
         void DrawGear(DrawingContext dc, Brush white, Brush gray)
         {
             double gw = GearColW;
-            double cx = gearX + (ShowSpeed ? 40 : gw / 2);      // gear and speed digits share this axis; "km/h" sits to the right
+            double cx = gearX + (ShowSpeed ? 47 : gw / 2);      // gear and speed digits share this axis (also the center of the shift lights); "km/h" sits to the right
             bool tall = contentH >= 120, both = ShowGear && ShowSpeed;
             double r = T.MaxRpm > 0 ? (double)T.Rpm / T.MaxRpm : 0;
             // shift point: whole bar flashes, alternating the two shift colors
@@ -352,7 +352,7 @@ namespace SimracingBR
             bool digits = ShowGear || ShowSpeed;
             if (ShowShiftLights)
             {
-                double ly = digits ? PAD : (Height - 6) / 2, lx = gearX + (gw - 94) / 2;
+                double ly = digits ? PAD : (Height - 6) / 2, lx = cx - 47;
                 for (int i = 0; i < 10; i++)
                 {
                     bool on = T.ShiftUp || r >= 0.72 + 0.028 * i;
