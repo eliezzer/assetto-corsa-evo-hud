@@ -24,6 +24,15 @@ O app descobre sozinho qual jogo está aberto. Não precisa de SimHub nem de ins
 > [!IMPORTANT]
 > **Os overlays de pista só aparecem quando o carro está na pista.** Eles ficam escondidos nos menus, no replay, na pausa e com o carro parado no box ou na garagem. Se você abrir o jogo e não aparecer nada, é o esperado: comece a pilotar. O overlay de combustível também pode aparecer na tela de setup do jogo (veja [Quando mostrar](#overlay-de-combustível-beta)).
 
+## Baixar
+
+Uma versão pronta para rodar no Windows (não precisa instalar nada: só do .NET Framework que já vem no Windows). Baixe o zip de uma release, extraia e rode `SimracingBR.exe`, mantendo a pasta `assets` ao lado dele.
+
+- [Releases do SimracingBR-overlay](https://github.com/eliezzer/SimracingBR-overlay/releases) (v0.2.0)
+- [Releases do assetto-corsa-evo-hud](https://github.com/eliezzer/assetto-corsa-evo-hud/releases) (v2.0.0, o mesmo programa)
+
+Os dois repositórios têm o mesmo código, e a versão que o programa mostra na dica do ícone da bandeja é a dele (0.2.0). O programa não é assinado, então o Windows pode mostrar um aviso do SmartScreen na primeira vez: escolha *Mais informações* → *Executar assim mesmo*. Você também pode compilar você mesmo, veja [Compilar](#compilar).
+
 ## Configuração de cada jogo
 
 - **AC EVO, ACC e LMU**: nada a fazer, a memória compartilhada já vem ligada.

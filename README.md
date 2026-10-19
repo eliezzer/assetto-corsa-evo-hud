@@ -24,6 +24,15 @@ The app detects which game is running by itself. No SimHub and nothing to instal
 > [!IMPORTANT]
 > **The track overlays only appear while the car is on track.** They stay hidden in menus, replays, pause, and while the car is parked in the pit box or garage. If you see nothing after launching the game, that is expected: start driving. The fuel overlay can also be shown on the game's setup screen (see [When to show](#fuel-overlay-beta)).
 
+## Download
+
+A ready-to-run build for Windows (nothing to install: it only needs the .NET Framework that ships with Windows). Download the zip from a release, extract it and run `SimracingBR.exe`, keeping the `assets` folder next to it.
+
+- [SimracingBR-overlay releases](https://github.com/eliezzer/SimracingBR-overlay/releases) (v0.2.0)
+- [assetto-corsa-evo-hud releases](https://github.com/eliezzer/assetto-corsa-evo-hud/releases) (v2.0.0, the same program)
+
+Both repositories hold the same code, and the version the program shows in the tray tooltip is its own (0.2.0). The program is not code-signed, so Windows may show a SmartScreen warning the first time: choose *More info* → *Run anyway*. You can also build it yourself, see [Build](#build).
+
 ## Per-game setup
 
 - **AC EVO, ACC and LMU**: nothing to do, shared memory is on by default.
