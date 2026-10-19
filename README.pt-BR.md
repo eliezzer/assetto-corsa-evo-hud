@@ -1,77 +1,69 @@
-# EvoHud
+# SimracingBR Overlay
 
 [English](README.md) · **Português**
 
-Overlay de telemetria para **Assetto Corsa EVO**: gráfico e barras de pedais (embreagem, freio, acelerador) com destaque quando ABS/TC atuam, níveis de ABS/TC/TCC, marcha, velocidade, luzes de troca, volante girando e linha de combustível (atual, consumo por volta e voltas restantes).
+Overlay de telemetria para simuladores de corrida. Mostra o gráfico e as barras dos pedais (embreagem, freio e acelerador), que mudam de cor quando ABS ou TC atuam, os níveis de ABS/TC/TCC, marcha, velocidade, luzes de troca, um volante que gira e o combustível (atual, consumo por volta e voltas restantes).
 
-Lê a memória compartilhada do jogo (`Local\acevo_pmf_physics` / `Local\acevo_pmf_graphics`) diretamente. Não precisa de SimHub nem de instalar nada: compila com o .NET Framework que já vem no Windows.
+| Jogo | Fonte dos dados | Status |
+|---|---|---|
+| **Assetto Corsa EVO** | `Local\acevo_pmf_*` | Pronto (mesmo código do [EvoHud](https://github.com/eliezzer/assetto-corsa-evo-hud)) |
+| **Assetto Corsa Competizione** | `Local\acpmf_*` | Implementado, falta testar no jogo |
+| **Automobilista 2** | `$pcars2$` (formato Project CARS 2) | Implementado, falta testar no jogo |
+| **Le Mans Ultimate** | `LMU_Data` (memória compartilhada nativa do LMU) | Implementado, falta testar no jogo |
+
+O app descobre sozinho qual jogo está aberto. Não precisa de SimHub nem de instalar nada: compila com o .NET Framework que já vem no Windows.
 
 > [!IMPORTANT]
-> **O overlay só aparece quando o carro está na pista.** Ele fica escondido nos menus, no replay, na pausa e enquanto o carro está parado no box ou na garagem (tela de setup). Para ele aparecer: **engate a primeira marcha e acelere**, para o carro começar a andar.
-> Se você não vê nada depois de abrir o jogo, isso é esperado: não é defeito. Comece a pilotar e ele aparece. Ele some de novo quando você para no box, pausa ou sai da sessão.
+> **O overlay só aparece quando o carro está na pista.** Ele fica escondido nos menus, no replay, na pausa e com o carro parado no box ou na garagem. Se você abrir o jogo e não aparecer nada, é o esperado: comece a pilotar.
 
-## Baixar
+## Configuração de cada jogo
 
-Baixe o `EvoHud-v1.1.2-windows.zip` na página de [Releases](../../releases), extraia e rode o `EvoHud.exe`. Mantenha a pasta `assets` ao lado do `.exe`.
+- **AC EVO, ACC e LMU**: nada a fazer, a memória compartilhada já vem ligada.
+- **Automobilista 2**: em *Options → System*, mude **Shared Memory** para **Project CARS 2**.
+- Jogue em **janela** ou **tela cheia sem bordas** (o overlay não aparece sobre tela cheia exclusiva).
 
 ## Usar
 
-1. Rode `EvoHud.exe` (a pasta `assets` precisa estar ao lado dele).
-2. O jogo deve estar em **janela** ou **tela cheia sem bordas**.
-3. O HUD aparece só enquanto você está pilotando. Some em menus, replay, pausa, parado no box (setup) e quando o jogo não está em primeiro plano.
-4. Ícone "E" na bandeja do sistema (perto do relógio), clique direito:
-   - **Unlock / Lock position**: destrava para arrastar (também `Ctrl+Shift+L` ou duplo clique no ícone).
-   - **Configurações...**, **Tamanho**, **Restaurar posição**, **Modo demonstração**, **Esconder quando não está pilotando**, **Sair**.
+1. Rode `SimracingBR.exe` (a pasta `assets` precisa estar ao lado dele).
+2. Ícone "S" verde e amarelo na bandeja do sistema (perto do relógio). Clique com o botão direito:
+   - **Configurações...**: escolha o que aparece no HUD, tamanho e transparência.
+   - **Destravar / Travar posição**: destrava para arrastar (também `Ctrl+Shift+L` ou duplo clique no ícone). Também dá para passar o mouse sobre o HUD e clicar no botão **DESTRAVAR** / **TRAVAR** que aparece no canto superior direito.
+   - **Tamanho**, **Restaurar posição**, **Modo demonstração**, **Esconder quando não está pilotando**, **Sair**.
+3. Redimensione com `Ctrl+Shift++` / `Ctrl+Shift+-`, ou destrave e use a rodinha do mouse ou arraste o canto amarelo.
 
-**Sem pedal de embreagem?** Desmarque **Embreagem** em **Configurações...** (ou use `ShowClutch=0`). Com embreagem automática o jogo mexe no valor da embreagem sozinho, e a barra azul parece travada. A barra e a linha dela no gráfico somem e as outras duas barras se centralizam.
+O chip **TCC** (corte do TC) só aparece nos jogos e carros que têm esse ajuste (AC EVO, ACC e alguns carros do LMU).
 
-## Escolher o que ver
+## O que cada jogo fornece
 
-Clique com o botão direito no ícone da bandeja e escolha **Configurações...** (ou rode `EvoHud.exe --settings`). Marque só o que você quer no HUD. Ele se reorganiza sozinho: o que for escondido não ocupa espaço e o overlay encolhe para caber. Tudo vale na hora, fica salvo, e o HUD mostra dados de demonstração enquanto a janela está aberta, para você ver o efeito de cada opção.
+| Dado | AC EVO | ACC | AMS2 | LMU |
+|---|---|---|---|---|
+| Pedais, marcha, RPM, velocidade | ✓ | ✓ | ✓ | ✓ |
+| Giro do volante | ✓ (graus do jogo) | `AccSteerLock` | `Ams2SteerLock` | ✓ (faixa do volante do jogo) |
+| Níveis de ABS / TC | ✓ | ✓ | ✓ | ✓ |
+| Nível de TCC | ✓ | ✓ | – | quando o carro tem |
+| ABS atuando | ✓ | ✓ | ✓ | ✓ |
+| TC atuando | ✓ | ✓ | – (o jogo não publica) | ✓ |
+| Consumo por volta | do jogo | do jogo | medido pelo HUD | medido pelo HUD |
 
-| Grupo | Opções |
-|---|---|
-| Pedais | Gráfico dos pedais, barras dos pedais, embreagem (barra e linha do gráfico), níveis e atuação de ABS / TC / TCC |
-| Painel | Marcha, velocidade, luzes de troca, volante |
-| Combustível | Combustível no tanque, consumo por volta, voltas restantes |
-| Aparência | Controles de **tamanho** (40% a 300%) e de **transparência**, e **Restaurar padrões** |
+O ACC e o AMS2 só informam o volante de -1 a 1. O HUD converte para graus usando o giro total do volante, que é `540` por padrão. Ajuste no `settings.ini` (`AccSteerLock=`, `Ams2SteerLock=`) para combinar com o carro.
 
-Com o gráfico dos pedais, as caixinhas de ABS / TC / TCC ficam numa linha abaixo da tira de combustível. Sem o gráfico dos pedais o HUD fica compacto: as barras ficam ao lado de um cartão de combustível, com as caixinhas de ABS / TC / TCC numa linha logo abaixo das linhas de combustível.
-
-A janela segue o idioma do seu Windows (português ou inglês).
-## Redimensionar
-
-Escolha o tamanho que quiser, de 40% a 300% do padrão. O tamanho é salvo e volta igual na próxima vez.
-
-- **Ícone da bandeja, botão direito, Size**: 50%, 75%, 100%, 125%, 150%, 200%, 250%, ou Bigger (maior) / Smaller (menor).
-- **Atalhos (funcionam a qualquer hora, inclusive jogando)**: `Ctrl+Shift++` aumenta, `Ctrl+Shift+-` diminui (teclas do teclado principal ou do numérico).
-- **Com o mouse**: destrave o HUD (`Ctrl+Shift+L`), depois **gire a rodinha do mouse** sobre ele ou **arraste o canto amarelo no canto inferior direito**. Trave de novo quando terminar.
-
-Também dá para definir à mão com `Scale` no `settings.ini` (por exemplo `Scale=1.5`).
 ## Configurar
 
 `settings.ini` é criado ao lado do `.exe` (edite com o app fechado):
 
 | Chave | Padrão | O que faz |
 |---|---|---|
-| `Scale` | `1.0` | Tamanho do HUD, de 0.4 a 3.0 (salvo quando você redimensiona) |
+| `Scale` | `1.0` | Tamanho do HUD, de 0.4 a 3.0 |
 | `Opacity` | `0.94` | Transparência |
-| `Wheel` | `assets\wheel.png` | Imagem do volante (PNG quadrado, fundo transparente, centralizado) |
+| `Wheel` | `assets\wheel.png` | Imagem do volante (PNG quadrado, fundo transparente) |
 | `InvertSteer` | `0` | Inverte o giro do volante |
+| `AccSteerLock` / `Ams2SteerLock` / `LmuSteerLock` | `540` | Giro total do volante em graus (o LMU usa o valor do jogo quando existe) |
 | `ColorClutch` / `ColorBrake` / `ColorThrottle` | azul / vermelho / verde | Cores dos pedais |
 | `ColorAbs` / `ColorTc` | laranja / amarelo | Cor quando ABS/TC atuam |
 | `ColorShiftA` / `ColorShiftB` | vermelho / apagado | Pisca de troca de marcha |
-| `ShowGraph`, `ShowBars`, `ShowClutch`, `ShowAids`, `ShowGear`, `ShowSpeed`, `ShowShiftLights`, `ShowWheel`, `ShowFuel`, `ShowFuelPerLap`, `ShowLapsLeft` | `1` | Mostra ou esconde cada parte (mais fácil pela janela de Configurações) |
+| `ShowGraph`, `ShowBars`, `ShowClutch`, `ShowAids`, `ShowGear`, `ShowSpeed`, `ShowShiftLights`, `ShowWheel`, `ShowFuel`, `ShowFuelPerLap`, `ShowLapsLeft` | `1` | Mostra ou esconde cada parte |
 | `AidColors` | `1` | Recolore os pedais enquanto ABS / TC atuam |
 | `AutoHide`, `HideInPitBox`, `HideWhenGameNotFocused` | `1` | Regras de esconder |
-
-## Trocar o volante
-
-Coloque um PNG quadrado com fundo transparente em `assets\wheel.png`. Para uma foto com fundo branco:
-
-```
-powershell -ExecutionPolicy Bypass -File tools\cutout.ps1 C:\caminho\volante.jpg assets\wheel.png
-```
 
 ## Compilar
 
@@ -79,9 +71,23 @@ powershell -ExecutionPolicy Bypass -File tools\cutout.ps1 C:\caminho\volante.jpg
 powershell -ExecutionPolicy Bypass -File build.ps1
 ```
 
-Gera `dist\EvoHud.exe` (+ `dist\assets`).
+Gera `dist\SimracingBR.exe` (+ `dist\assets`).
 
 ## Diagnóstico
 
-`EvoHud.exe --probe` grava `probe.log` por 40 s com os valores brutos lidos do jogo. `EvoHud.exe --demo` abre com dados de demonstração.
+`SimracingBR.exe --probe` grava `probe.log` por 40 s com os valores brutos de todos os jogos suportados. Rode com o carro na pista e mande o arquivo se algo parecer errado. `SimracingBR.exe --demo` abre com dados de demonstração.
 
+## Estrutura
+
+```
+src/Core/Model.cs           modelo de telemetria comum, base de memória compartilhada, settings
+src/Sources/AcEvoSource.cs  Assetto Corsa EVO
+src/Sources/AccSource.cs    Assetto Corsa Competizione
+src/Sources/Ams2Source.cs   Automobilista 2
+src/Sources/LmuSource.cs    Le Mans Ultimate
+src/Sources/GameSources.cs  detecção automática do jogo + dados de demonstração
+src/UI/HudView.cs           desenho do HUD
+src/UI/HudWindow.cs         janela, bandeja, atalhos, configurações, auto-esconder
+```
+
+Para suportar outro jogo: crie uma classe `ITelemetrySource` (normalmente herdando de `ShmSource`) que preencha o `Tele`, e adicione em `GameSources`.
