@@ -145,7 +145,7 @@ namespace SimracingBR
             t.LapCount = BitConverter.ToInt32(gb, G_LAPCOUNT);
             float fpct = BitConverter.ToSingle(gb, G_FUELPCT);
             t.FuelCap = (fpct > 0.01f && fpct <= 1.001f && t.Fuel > 0) ? t.Fuel / fpct : 0;
-            t.SessionIsRace = Str(Pages[2], 36, 24, false) == "Race";
+            t.SessionIsRace = Str(Pages[2], 36, 24, false) == "Race";     // solo only: online it keeps the name of the session joined (seen "Qualifying" all race)
             t.SessionTimeLeftMs = ParseClockMs(Str(gb, G_SESSION + 33, 20, false));
             t.SessionLaps = 0;                                       // not published
             // the event definition (online servers too) first, the log of a solo event otherwise: known in practice and qualifying
@@ -177,7 +177,8 @@ namespace SimracingBR
                 "steerRaw={10:0.000} steerDegG={11} steerPctG={12:0.000} tcF={13:0.000} absF={14:0.000} tcAct={15} absAct={16} " +
                 "tcG={17} absG={18} fuel={19:0.00} fuelLapG={20:0.000} lapsPoss={21:0.0} lapMs={22} physFuel={23:0.00} " +
                 "elec=[tc {24} tcCut {25} abs {26} esc {27} ebb {28} bb {29:0.000}] " +
-                "npos={37:0.0000} lastLap={38} bestLap={39} valid={40} status={30} pitBox={31} pitLane={32} location={33} shiftUp={34} cluG={35:0.000} autoShift={36}",
+                "npos={37:0.0000} lastLap={38} bestLap={39} valid={40} status={30} pitBox={31} pitLane={32} location={33} shiftUp={34} cluG={35:0.000} autoShift={36} " +
+                "staticSession='{41}' sessRaw72={42}",
                 BitConverter.ToInt32(pb, 0), BitConverter.ToSingle(pb, AcPhys.GAS), BitConverter.ToSingle(pb, AcPhys.BRAKE),
                 BitConverter.ToSingle(pb, AcPhys.CLUTCH), BitConverter.ToInt32(pb, AcPhys.GEAR), BitConverter.ToInt16(gb, G_GEAR),
                 BitConverter.ToInt32(pb, AcPhys.RPM), BitConverter.ToUInt16(gb, G_RPM), BitConverter.ToInt32(pb, AcPhys.MAXRPM),
@@ -192,7 +193,8 @@ namespace SimracingBR
                 BitConverter.ToSingle(gb, G_ELEC + 8),
                 BitConverter.ToInt32(gb, G_STATUS), gb[G_PITBOX], gb[G_PITLANE], BitConverter.ToInt32(gb, G_LOCATION), gb[G_SHIFTUP],
                 BitConverter.ToSingle(gb, G_CLUTCHPCT), BitConverter.ToInt32(pb, AcPhys.AUTOSHIFT),
-                BitConverter.ToSingle(gb, G_NPOS), BitConverter.ToInt32(gb, G_LASTLAP), BitConverter.ToInt32(gb, G_BESTLAP), gb[G_VALID]);
+                BitConverter.ToSingle(gb, G_NPOS), BitConverter.ToInt32(gb, G_LASTLAP), BitConverter.ToInt32(gb, G_BESTLAP), gb[G_VALID],
+                Str(Pages[2], 36, 24, false), BitConverter.ToInt32(gb, G_SESSION + 72));      // session type candidates: online the static name stays "Qualifying" in the race
         }
     }
 }

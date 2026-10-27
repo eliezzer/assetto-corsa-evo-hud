@@ -3,11 +3,13 @@
 //   per lap      = what the game says, otherwise the average of the last clean laps measured here
 //   laps left    = fuel in the tank / per lap
 //   race laps    = the race's total laps                                           (lap race)
-//                = total race time / fastest valid lap + 0.5                         (timed race; the last lap isn't over when time runs out)
+//                = total race time / fastest valid lap + 1                           (timed race; the lap running when time runs out is finished,
+//                                                                                     and AC EVO online was seen giving one more after it)
 //   race fuel    = (race laps + margin) * per lap                                    <- what the overlay suggests loading
 //
 // It never looks at the time left or at what is in the tank: the suggestion is for the full race distance.
-// The race length is the "race laps" / "race minutes" setting, or, in a race session, what the game says (laps, or the highest
+// The race length is the "race laps" / "race minutes" setting, or the event definition / game log (remembered as the last race
+// seen), or, in a race session, what the game says (laps, or the highest
 // session clock seen, i.e. the start of a timed race). The lap time is the fastest valid lap seen on this track and car in any
 // session (so the qualifying lap counts), and it, like the consumption, is remembered between runs.
 using System;
@@ -111,8 +113,8 @@ namespace SimracingBR
             // in the race session itself, else the last race seen
             if (ManualRaceLaps > 0) { laps = ManualRaceLaps; RaceSource = 1; }
             else if (ManualRaceMinutes > 0) { seconds = ManualRaceMinutes * 60; RaceSource = 1; }
-            else if (t.RaceLengthLaps > 0) { laps = t.RaceLengthLaps; RaceSource = 4; }
-            else if (t.RaceLengthSec > 0) { seconds = t.RaceLengthSec; RaceSource = 4; }
+            else if (t.RaceLengthLaps > 0) { laps = t.RaceLengthLaps; RaceSource = 4; Learn(laps, 0); }
+            else if (t.RaceLengthSec > 0) { seconds = t.RaceLengthSec; RaceSource = 4; Learn(0, (int)Math.Round(seconds / 60.0)); }
             else if (t.SessionIsRace && t.SessionLaps > 0) { laps = t.SessionLaps; RaceSource = 2; Learn(laps, 0); }
             else if (t.SessionIsRace && raceStartClockMs > 0) { int min = (int)Math.Round(raceStartClockMs / 60000.0); seconds = min * 60; RaceSource = 2; Learn(0, min); }
             else if (learnedIsLaps && learnedLaps > 0) { laps = learnedLaps; RaceSource = 3; }
@@ -122,7 +124,7 @@ namespace SimracingBR
             else if (seconds > 0)
             {
                 TimedRace = true; RaceMinutes = (int)Math.Round(seconds / 60.0);
-                if (lap > 0) RaceLaps = seconds * 1000.0 / lap + 0.5;
+                if (lap > 0) RaceLaps = seconds * 1000.0 / lap + 1;
             }
             if (RaceLaps >= 0 && PerLap > 0.01) RaceFuel = (RaceLaps + MarginLaps) * PerLap;
         }
