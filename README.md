@@ -138,6 +138,7 @@ AC EVO publishes the player's data in shared memory but nothing about the other 
 | `ColorClutch` / `ColorBrake` / `ColorThrottle` | blue / red / green | Pedal colors |
 | `ColorAbs` / `ColorTc` | orange / yellow | Color while ABS/TC cut in |
 | `ColorShiftA` / `ColorShiftB` | red / dark | Shift-point flash |
+| `ColorStripe` | `#E10600` (red) | Stripe on the left of every overlay (also in **Settings** > Appearance) |
 | `ShowGraph`, `ShowBars`, `ShowClutch`, `ShowAids`, `ShowBias`, `ShowGear`, `ShowSpeed`, `ShowShiftLights`, `ShowWheel`, `ShowFuel`, `ShowFuelPerLap`, `ShowLapsLeft` | `1` | Show or hide each part of the pedals overlay |
 | `AidColors` | `1` | Recolor the pedals while ABS / TC cut in |
 | `AutoHide`, `HideInPitBox`, `HideWhenGameNotFocused` | `1` | Hide rules of the track overlays |

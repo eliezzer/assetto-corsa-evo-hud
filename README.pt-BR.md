@@ -138,6 +138,7 @@ O AC EVO publica os dados do jogador na memória compartilhada, mas nada sobre o
 | `ColorClutch` / `ColorBrake` / `ColorThrottle` | azul / vermelho / verde | Cores dos pedais |
 | `ColorAbs` / `ColorTc` | laranja / amarelo | Cor quando ABS/TC atuam |
 | `ColorShiftA` / `ColorShiftB` | vermelho / apagado | Pisca de troca de marcha |
+| `ColorStripe` | `#E10600` (vermelho) | Faixa à esquerda de todos os overlays (também em **Configurações** > Aparência) |
 | `ShowGraph`, `ShowBars`, `ShowClutch`, `ShowAids`, `ShowBias`, `ShowGear`, `ShowSpeed`, `ShowShiftLights`, `ShowWheel`, `ShowFuel`, `ShowFuelPerLap`, `ShowLapsLeft` | `1` | Mostra ou esconde cada parte do overlay de pedais |
 | `AidColors` | `1` | Recolore os pedais enquanto ABS / TC atuam |
 | `AutoHide`, `HideInPitBox`, `HideWhenGameNotFocused` | `1` | Regras de esconder dos overlays de pista |

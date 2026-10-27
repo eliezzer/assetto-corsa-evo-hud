@@ -21,6 +21,8 @@ namespace SimracingBR
     public static class Chrome
     {
         public static readonly FontFamily Font = new FontFamily("Bahnschrift, Segoe UI");
+        public const string StripeDefault = "#E10600";
+        public static Color Stripe = Color.FromRgb(225, 6, 0);     // the vertical stripe on the left of every panel (ColorStripe)
 
         public static Brush Br(Color c) { var b = new SolidColorBrush(c); b.Freeze(); return b; }
         public static Brush Br(byte a, byte r, byte g, byte b) { return Br(Color.FromArgb(a, r, g, b)); }
@@ -59,7 +61,7 @@ namespace SimracingBR
         {
             dc.DrawRoundedRectangle(Br(235, 14, 14, 18), unlocked ? new Pen(Br(255, 255, 200, 0), 1.5) { DashStyle = DashStyles.Dash } : null,
                 new Rect(0, 0, w, h), 6, 6);
-            dc.DrawRectangle(Br(255, 225, 6, 0), null, new Rect(0, 0, 3, h));
+            dc.DrawRectangle(Br(Stripe), null, new Rect(0, 0, 3, h));
         }
 
         // ---- lock / unlock button, shown while the mouse is over the overlay ------------
