@@ -1,5 +1,6 @@
 // The pedals overlay (graph, bars, ABS/TC, gear/speed, wheel, fuel): its view, show/hide flags and fuel model.
 using System;
+using System.Globalization;
 using System.IO;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
@@ -26,6 +27,7 @@ namespace SimracingBR
             view.CAbs = s.Col("ColorAbs", "#FF8A00"); view.CTc = s.Col("ColorTc", "#FFE000");
             view.CShiftA = s.Col("ColorShiftA", "#FF1E1E"); view.CShiftB = s.Col("ColorShiftB", "#28282F");
             view.AidColors = s.Bool("AidColors", true); view.InvertSteer = s.Bool("InvertSteer", false);
+            view.BgOpacity = Math.Max(0, Math.Min(1, s.Num("BgOpacity", 1)));
             view.Wheel = LoadWheel(Path.Combine(dir, s.Str("Wheel", "assets\\wheel.png")));
             var w = new PedalsWindow(s, view);
             w.LoadFlags();
@@ -56,6 +58,13 @@ namespace SimracingBR
             View.Relayout();
         }
 
+        // Panel background only; the window Opacity fades everything (background included).
+        public void SetBgOpacity(double v)
+        {
+            View.BgOpacity = Math.Max(0, Math.Min(1, v)); View.InvalidateVisual();
+            cfg.Set("BgOpacity", View.BgOpacity.ToString("0.##", CultureInfo.InvariantCulture)); QueueSave();
+        }
+
         // After a show/hide change: reflow the HUD and keep its center where it was.
         public void LayoutChanged() { Reflow(View.Relayout); }
 
@@ -64,7 +73,7 @@ namespace SimracingBR
             foreach (string k in FlagKeys) cfg.Set(k, "1");
             Reflow(LoadFlags);
             ApplyScale(1.0, true);
-            SetOpacity(0.94);
+            SetOpacity(0.94); SetBgOpacity(1);
         }
 
         // ---- per frame --------------------------------------------------------------------

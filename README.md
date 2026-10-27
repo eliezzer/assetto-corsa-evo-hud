@@ -52,7 +52,7 @@ Every overlay has its own position, size and transparency. BETA means it works b
 
 ## Pedals overlay
 
-Pedal graph and bars, ABS / TC / TCC chips (they light up while the aid cuts in), a **BB** chip with the brake bias, gear, speed, shift lights, steering wheel and a fuel row. In Settings choose what is shown, size and transparency. The **TCC** chip only shows for games and cars that have that setting, and the **BB** chip only when the game publishes the brake bias.
+Pedal graph and bars, ABS / TC / TCC chips (they light up while the aid cuts in), a **BB** chip with the brake bias, gear, speed, shift lights, steering wheel and a fuel row. In Settings choose what is shown, size, overall transparency and background transparency (the background can go almost invisible while the pedals stay solid). The **TCC** chip only shows for games and cars that have that setting, and the **BB** chip only when the game publishes the brake bias.
 
 ## Sectors overlay (BETA)
 
@@ -131,7 +131,8 @@ AC EVO publishes the player's data in shared memory but nothing about the other 
 | Key | Default | What it does |
 |---|---|---|
 | `Scale` | `1.0` | Pedals overlay size, 0.4 to 3.0 |
-| `Opacity` | `0.94` | Pedals overlay opacity |
+| `Opacity` | `0.94` | Pedals overlay opacity (whole overlay: pedals, gear, wheel and background), 0.2 to 1.0 |
+| `BgOpacity` | `1.0` | Pedals overlay panel background only, 0.0 to 1.0, multiplied by `Opacity` (lower it to keep the pedals solid over a see-through background) |
 | `Wheel` | `assets\wheel.png` | Steering wheel image (square PNG, transparent background) |
 | `InvertSteer` | `0` | Flip the wheel rotation |
 | `AccSteerLock` / `Ams2SteerLock` / `LmuSteerLock` | `540` | Lock-to-lock rotation in degrees (LMU uses the game's value when present) |

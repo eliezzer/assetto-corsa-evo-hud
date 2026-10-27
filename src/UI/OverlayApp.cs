@@ -302,7 +302,9 @@ namespace SimracingBR
             AddCheck(root, L.T("Consumption per lap", "Consumo por volta"), "ShowFuelPerLap", () => v.ShowFuelPerLap, x => v.ShowFuelPerLap = x, after);
             AddCheck(root, L.T("Laps remaining", "Voltas restantes"), "ShowLapsLeft", () => v.ShowLapsLeft, x => v.ShowLapsLeft = x, after);
 
-            AddAppearance(root, pedals);
+            AddAppearance(root, pedals, L.T("Overall transparency (lower = more see-through)", "Transparência geral (menor = mais transparente)"));
+            AddSlider(root, L.T("Background transparency (lower = more see-through)", "Transparência do fundo (menor = mais transparente)"), 0, 100, 5,
+                () => v.BgOpacity * 100, x => pedals.SetBgOpacity(x / 100.0), x => Math.Round(x) + "%");
         }
 
         void BuildSectorsPage(Panel root)
@@ -483,12 +485,12 @@ namespace SimracingBR
             return row;
         }
 
-        void AddAppearance(Panel p, OverlayWindow o)
+        void AddAppearance(Panel p, OverlayWindow o, string opacityLabel = null)
         {
             AddSection(p, L.T("APPEARANCE", "APARÊNCIA"));
             AddSlider(p, L.T("Size", "Tamanho"), OverlayWindow.MinScale * 100, OverlayWindow.MaxScale * 100, 5, () => o.Scale * 100,
                 v => { o.ApplyScale(v / 100.0, true); o.QueueSave(); }, v => Math.Round(v) + "%");
-            AddSlider(p, L.T("Transparency (lower = more see-through)", "Transparência (menor = mais transparente)"), 20, 100, 5, () => o.Opacity * 100,
+            AddSlider(p, opacityLabel ?? L.T("Transparency (lower = more see-through)", "Transparência (menor = mais transparente)"), 20, 100, 5, () => o.Opacity * 100,
                 v => o.SetOpacity(v / 100.0), v => Math.Round(v) + "%");
         }
 
