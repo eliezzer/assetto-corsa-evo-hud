@@ -7,7 +7,7 @@ A set of telemetry overlays for sim racing games, drawn over the game (windowed 
 | Overlay | What it shows | Default |
 |---|---|---|
 | **Pedals** | Pedal input graph and bars (clutch, brake, throttle) that highlight when ABS/TC cut in, ABS / TC / TCC levels, brake bias, gear, speed, shift lights, a rotating steering wheel, fuel row | on |
-| **Sectors** (BETA) | Current / best / last lap, the leader's best lap, and S1 / S2 / S3 split into sub-sectors colored purple / green / gray, like the CMRT app of Assetto Corsa 1 | on |
+| **Sectors** (BETA) | Current / best / last lap, the leader's best lap, your position and lap, and S1 / S2 / S3 split into sub-sectors colored purple / green / gray, like the CMRT app of Assetto Corsa 1 | on |
 | **Fuel** (BETA) | Fuel in the tank, consumption per lap, laps left, and the **suggested fuel for the whole race** | off |
 | **Electronics** | ABS / TC / TCC / ESC chips, brake bias, engine map, differential, hybrid battery, virtual energy, DRS | off |
 | ~~Tyres~~ | Tyre pressure advisor: switched off for now (see [below](#tyre-pressure-advisor-switched-off)) | – |
@@ -29,9 +29,9 @@ The app detects which game is running by itself. No SimHub and nothing to instal
 A ready-to-run build for Windows (nothing to install: it only needs the .NET Framework that ships with Windows). Download the zip from a release, extract it and run `SimracingBR.exe`, keeping the `assets` folder next to it.
 
 - [SimracingBR-overlay releases](https://github.com/eliezzer/SimracingBR-overlay/releases) (v0.2.0)
-- [assetto-corsa-evo-hud releases](https://github.com/eliezzer/assetto-corsa-evo-hud/releases) (v2.1.0, the newest: online fuel fixes, pedals background transparency, stripe color)
+- [assetto-corsa-evo-hud releases](https://github.com/eliezzer/assetto-corsa-evo-hud/releases) (v2.2.0, the newest: race length shown big on the fuel overlay, position and lap on the sectors overlay)
 
-SimracingBR-overlay v0.2.0 is the same program as assetto-corsa-evo-hud v2.0.0; v2.1.0 is only here for now. The version the program shows in the tray tooltip is its own (0.3.0 for v2.1.0). The program is not code-signed, so Windows may show a SmartScreen warning the first time: choose *More info* → *Run anyway*. You can also build it yourself, see [Build](#build).
+SimracingBR-overlay v0.2.0 is the same program as assetto-corsa-evo-hud v2.0.0; v2.1.0 and later are only here for now. The version the program shows in the tray tooltip is its own (0.4.0 for v2.2.0). The program is not code-signed, so Windows may show a SmartScreen warning the first time: choose *More info* → *Run anyway*. You can also build it yourself, see [Build](#build).
 
 ## Per-game setup
 
@@ -56,7 +56,7 @@ Pedal graph and bars, ABS / TC / TCC chips (they light up while the aid cuts in)
 
 ## Sectors overlay (BETA)
 
-Current / best / last lap, the leader's best lap (LMU and AMS2 only) and S1 / S2 / S3 with 8 sub-sectors each (1 to 12 in Settings).
+Current / best / last lap, the leader's best lap (LMU and AMS2 only), your position and the lap you are on, and S1 / S2 / S3 with 8 sub-sectors each (1 to 12 in Settings).
 
 The games only publish the 3 main sectors (some not even that), so the overlay times every stretch itself from the lap position and its own clock; every game publishes the position. The colors work like the CMRT app of Assetto Corsa 1: each stretch is painted as soon as you drive it, and everything goes back to dark after the finish line:
 
@@ -71,11 +71,11 @@ The current lap time is red when the lap is invalid and purple while you are ahe
 
 ## Fuel overlay (BETA)
 
-Fuel in the tank (with a level bar), consumption per lap, laps left on the tank, and **SUGGESTED FUEL**: the fuel for the **whole race** (never "what to add").
+Fuel in the tank (with a level bar), consumption per lap, laps left on the tank, and **SUGGESTED FUEL**: the fuel for the **whole race** (never "what to add"), with the **race length** it is based on.
 
 ```
 suggested fuel = (race laps + safety margin) * consumption per lap
-race laps      = the race's laps, or: race time / your fastest valid lap + 0.5   (timed race)
+race laps      = the race's laps, or: race time / your fastest valid lap + 1     (timed race)
 ```
 
 - **Consumption** comes from the game when it has it, otherwise it is measured over clean laps. It is remembered per track and car.

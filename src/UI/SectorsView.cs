@@ -43,7 +43,7 @@ namespace SimracingBR
             contentW = Math.Max(barW, ShowTimes ? 2 * TIME_COL : 0);
             secW = (contentW - 2 * SEC_GAP) / 3;
             subW = (secW - (subs - 1) * SUB_GAP) / subs;
-            timesH = ShowTimes ? 2 * TIME_ROW + VGAP : 0;
+            timesH = ShowTimes ? 3 * TIME_ROW + VGAP : 0;
             barY = PAD + timesH;
             Width = contentW + 2 * PAD;
             Height = PAD + timesH + HEAD_H + HEAD_SUB_GAP + SUB_H + PAD;
@@ -132,7 +132,7 @@ namespace SimracingBR
 
         static double Luma(Color c) { return 0.3 * c.R + 0.59 * c.G + 0.11 * c.B; }
 
-        // CURRENT / BEST on the first line, LAST / LEADER on the second
+        // CURRENT / BEST on the first line, LAST / LEADER on the second, POSITION / LAP on the third
         void DrawTimes(DrawingContext dc, Brush gray, Brush white)
         {
             int best = T.BestLapMs > 0 ? T.BestLapMs : Tracker.OwnBestMs;
@@ -143,6 +143,11 @@ namespace SimracingBR
             Item(dc, PAD + TIME_COL + 4, PAD, L.T("BEST", "MELHOR"), Chrome.Time(best), bestInk);
             Item(dc, PAD + 4, PAD + TIME_ROW, L.T("LAST", "ÚLTIMA"), Chrome.Time(last), white);
             if (ShowLeader && T.HasLeader) Item(dc, PAD + TIME_COL + 4, PAD + TIME_ROW, L.T("LEADER", "LÍDER"), Chrome.Time(T.LeaderBestMs), white);
+            // lap = the one being driven; "/N" only when the game says how many
+            string pos = T.Position > 0 ? "P" + T.Position + (T.Drivers > 1 ? "/" + T.Drivers : "") : "--";
+            string lap = T.LapCount >= 0 ? (T.LapCount + 1) + (T.SessionLaps > 0 ? "/" + T.SessionLaps : "") : "--";
+            Item(dc, PAD + 4, PAD + 2 * TIME_ROW, L.T("POSITION", "POSIÇÃO"), pos, white);
+            Item(dc, PAD + TIME_COL + 4, PAD + 2 * TIME_ROW, L.T("LAP", "VOLTA"), lap, white);
         }
 
         void Item(DrawingContext dc, double x, double y, string label, string value, Brush valueBrush)

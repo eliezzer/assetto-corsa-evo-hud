@@ -83,7 +83,7 @@ namespace SimracingBR
             G_FUELLAP = G("fuelLiterPerLap"), G_LAPMS = G("currentLapTimeMs"), G_LAPSPOSS = G("lapsPossibleWithFuel"),
             G_RPM = G("rpm"), G_ELEC = G("electronics"), G_SHIFTUP = G("isChangeUp"),
             G_CLUTCHPCT = G("clutchPercent"), G_STATUS = G("status"), G_PITBOX = G("isInPitBox"), G_PITLANE = G("isInPitLane"), G_LOCATION = G("carLocation"),
-            G_DRIVERS = G("totalDrivers"), G_LAPCOUNT = G("totalLapCount"), G_FUELPCT = G("fuelLiterCurrentQuantityPercent"), G_SESSION = G("sessionState"),
+            G_DRIVERS = G("totalDrivers"), G_POS = G("currentPos"), G_LAPCOUNT = G("totalLapCount"), G_FUELPCT = G("fuelLiterCurrentQuantityPercent"), G_SESSION = G("sessionState"),
             G_ELECMAX = G("electronicsMax"), G_DIFFP = G("diffPowerRaw"), G_DIFFC = G("diffCoastRaw"), G_KERS = G("kersCurrentPerc"), G_HASKERS = G("hasKers"), G_DRSAVAIL = G("isDrsAvailable"), G_NPOS = G("npos"), G_LASTLAP = G("lastLaptimeMs"), G_BESTLAP = G("bestLaptimeMs"), G_VALID = G("isValidLap"), G_CAR = G("carModel");
         static readonly int GFX_LEN = G("isValidLap") + 1;
 
@@ -143,6 +143,7 @@ namespace SimracingBR
             t.ClearExtras();
             FillTyres(t, pb);
             t.LapCount = BitConverter.ToInt32(gb, G_LAPCOUNT);
+            t.Position = Pos((int)BitConverter.ToUInt32(gb, G_POS), t.Drivers);
             float fpct = BitConverter.ToSingle(gb, G_FUELPCT);
             t.FuelCap = (fpct > 0.01f && fpct <= 1.001f && t.Fuel > 0) ? t.Fuel / fpct : 0;
             t.SessionIsRace = Str(Pages[2], 36, 24, false) == "Race";     // solo only: online it keeps the name of the session joined (seen "Qualifying" all race)
@@ -178,7 +179,7 @@ namespace SimracingBR
                 "tcG={17} absG={18} fuel={19:0.00} fuelLapG={20:0.000} lapsPoss={21:0.0} lapMs={22} physFuel={23:0.00} " +
                 "elec=[tc {24} tcCut {25} abs {26} esc {27} ebb {28} bb {29:0.000}] " +
                 "npos={37:0.0000} lastLap={38} bestLap={39} valid={40} status={30} pitBox={31} pitLane={32} location={33} shiftUp={34} cluG={35:0.000} autoShift={36} " +
-                "staticSession='{41}' sessRaw72={42}",
+                "staticSession='{41}' currentPos={42}",
                 BitConverter.ToInt32(pb, 0), BitConverter.ToSingle(pb, AcPhys.GAS), BitConverter.ToSingle(pb, AcPhys.BRAKE),
                 BitConverter.ToSingle(pb, AcPhys.CLUTCH), BitConverter.ToInt32(pb, AcPhys.GEAR), BitConverter.ToInt16(gb, G_GEAR),
                 BitConverter.ToInt32(pb, AcPhys.RPM), BitConverter.ToUInt16(gb, G_RPM), BitConverter.ToInt32(pb, AcPhys.MAXRPM),
@@ -194,7 +195,7 @@ namespace SimracingBR
                 BitConverter.ToInt32(gb, G_STATUS), gb[G_PITBOX], gb[G_PITLANE], BitConverter.ToInt32(gb, G_LOCATION), gb[G_SHIFTUP],
                 BitConverter.ToSingle(gb, G_CLUTCHPCT), BitConverter.ToInt32(pb, AcPhys.AUTOSHIFT),
                 BitConverter.ToSingle(gb, G_NPOS), BitConverter.ToInt32(gb, G_LASTLAP), BitConverter.ToInt32(gb, G_BESTLAP), gb[G_VALID],
-                Str(Pages[2], 36, 24, false), BitConverter.ToInt32(gb, G_SESSION + 72));      // session type candidates: online the static name stays "Qualifying" in the race
+                Str(Pages[2], 36, 24, false), BitConverter.ToUInt32(gb, G_POS));      // online the static session name stays the one joined
         }
     }
 }
