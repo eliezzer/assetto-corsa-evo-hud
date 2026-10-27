@@ -187,7 +187,7 @@ namespace SimracingBR
             Brush white = Br(255, 245, 245, 245), gray = Br(255, 140, 140, 150);
             dc.DrawRoundedRectangle(Br(235, 14, 14, 18), Unlocked ? new Pen(Br(255, 255, 200, 0), 1.5) { DashStyle = DashStyles.Dash } : null,
                 new Rect(0, 0, Width, Height), 6, 6);
-            dc.DrawRectangle(Br(255, 225, 6, 0), null, new Rect(0, 0, 3, Height));
+            dc.DrawRectangle(Br(Chrome.Stripe), null, new Rect(0, 0, 3, Height));
 
             if (nothing)
             {

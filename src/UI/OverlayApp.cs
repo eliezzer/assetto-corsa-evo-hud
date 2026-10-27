@@ -62,6 +62,7 @@ namespace SimracingBR
             autoHide = s.Bool("AutoHide", true); hideInPitBox = s.Bool("HideInPitBox", true);
             hideUnfocused = s.Bool("HideWhenGameNotFocused", true);
             games = new GameSources(s);
+            Chrome.Stripe = s.Col("ColorStripe", Chrome.StripeDefault);
 
             pedals = PedalsWindow.Create(s, dir, tele);
             sectors = SectorsWindow.Create(s, tele);
@@ -490,7 +491,41 @@ namespace SimracingBR
                 v => { o.ApplyScale(v / 100.0, true); o.QueueSave(); }, v => Math.Round(v) + "%");
             AddSlider(p, L.T("Transparency (lower = more see-through)", "Transparência (menor = mais transparente)"), 20, 100, 5, () => o.Opacity * 100,
                 v => o.SetOpacity(v / 100.0), v => Math.Round(v) + "%");
+            AddStripeColor(p);
         }
+
+        // color of the stripe on the left of the panels: one setting shared by all the overlays
+        void AddStripeColor(Panel p)
+        {
+            var row = new DockPanel { Margin = new Thickness(0, 10, 0, 0), LastChildFill = false };
+            var swatch = new Border { Width = 40, Height = 20, CornerRadius = new CornerRadius(3), BorderBrush = Muted, BorderThickness = new Thickness(1), Cursor = Cursors.Hand, Margin = new Thickness(0, 0, 8, 0) };
+            var hex = new TextBlock { Foreground = Muted, FontSize = 12, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 8, 0) };
+            var def = new Button { Content = L.T("Default", "Padrão"), Padding = new Thickness(8, 1, 8, 1) };
+            Action paint = delegate { swatch.Background = new SolidColorBrush(Chrome.Stripe); hex.Text = Hex(Chrome.Stripe); };
+            Action<Color> apply = delegate (Color c)
+            {
+                Chrome.Stripe = Color.FromRgb(c.R, c.G, c.B);
+                cfg.Set("ColorStripe", Hex(c));
+                foreach (OverlayWindow w in overlays) ((UIElement)w.Content).InvalidateVisual();
+                foreach (Action r in refreshers) r();      // every page has a copy of this row
+            };
+            swatch.MouseLeftButtonUp += delegate
+            {
+                var dlg = new WF.ColorDialog { FullOpen = true, Color = SD.Color.FromArgb(Chrome.Stripe.R, Chrome.Stripe.G, Chrome.Stripe.B) };
+                var owner = new WF.NativeWindow();          // keeps the dialog above the (topmost) settings window
+                owner.AssignHandle(new WindowInteropHelper(settingsWin).Handle);
+                try { if (dlg.ShowDialog(owner) == WF.DialogResult.OK) apply(Color.FromRgb(dlg.Color.R, dlg.Color.G, dlg.Color.B)); }
+                finally { owner.ReleaseHandle(); }
+            };
+            def.Click += delegate { apply((Color)ColorConverter.ConvertFromString(Chrome.StripeDefault)); };
+            DockPanel.SetDock(def, Dock.Right); DockPanel.SetDock(hex, Dock.Right); DockPanel.SetDock(swatch, Dock.Right);
+            row.Children.Add(def); row.Children.Add(hex); row.Children.Add(swatch);
+            row.Children.Add(new TextBlock { Text = L.T("Stripe color (all overlays)", "Cor da faixa (todos os overlays)"), VerticalAlignment = VerticalAlignment.Center });
+            refreshers.Add(paint); paint();
+            p.Children.Add(row);
+        }
+
+        static string Hex(Color c) { return string.Format("#{0:X2}{1:X2}{2:X2}", c.R, c.G, c.B); }
 
         static void AddSection(Panel p, string title)
         {
