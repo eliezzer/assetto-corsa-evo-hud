@@ -108,6 +108,7 @@ namespace SimracingBR
             var cfg = new Settings(Path.Combine(dir, "settings.ini"));
             var games = new GameSources(cfg); var t = new Tele();
             var trk = new SectorTracker(null, 8);
+            var fuel = new FuelModel(null);
             using (var w = new StreamWriter(Path.Combine(dir, "probe.log"), false))
             {
                 var end = DateTime.UtcNow.AddSeconds(300);
@@ -117,8 +118,13 @@ namespace SimracingBR
                     if (n++ % 5 == 0) w.WriteLine(DateTime.Now.ToString("HH:mm:ss.fff") + " " + games.Probe(t));
                     games.Read(t);
                     trk.Update(t);
+                    fuel.Update(t);
                     if (n % 5 == 1)
                     {
+                        w.WriteLine("             fuel: raceLenSec=" + t.RaceLengthSec + " raceLenLaps=" + t.RaceLengthLaps + " source=" + fuel.RaceSource +
+                            " raceMin=" + fuel.RaceMinutes + " raceLaps=" + fuel.RaceLaps.ToString("0.00", CultureInfo.InvariantCulture) +
+                            " perLap=" + fuel.PerLap.ToString("0.000", CultureInfo.InvariantCulture) + " bestMs=" + fuel.BestValidLapMs +
+                            " raceFuel=" + fuel.RaceFuel.ToString("0.0", CultureInfo.InvariantCulture));
                         w.WriteLine("             tracker: pos=" + t.TrackPos.ToString("0.000", CultureInfo.InvariantCulture) + " lapMs=" + t.LapMs +
                             " seg=" + trk.CurSeg + " sec=" + trk.CurSec + " pitLane=" + t.InPitLane + " valid=" + t.LapValid +
                             " clean=" + (trk.Why.Length == 0) + " why='" + trk.Why + "' lapsRecorded=" + trk.LapsDone +
