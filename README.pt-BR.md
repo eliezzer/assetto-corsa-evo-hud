@@ -52,7 +52,7 @@ Cada overlay tem a sua posição, tamanho e transparência. BETA quer dizer que 
 
 ## Overlay de pedais
 
-Gráfico e barras dos pedais, chips de ABS / TC / TCC (acendem enquanto o auxílio atua), um chip **BB** com a balança de freio, marcha, velocidade, luzes de troca, volante e a linha de combustível. Em Configurações escolha o que aparece, o tamanho e a transparência. O chip **TCC** só aparece nos jogos e carros que têm esse ajuste, e o **BB** só quando o jogo publica a balança de freio.
+Gráfico e barras dos pedais, chips de ABS / TC / TCC (acendem enquanto o auxílio atua), um chip **BB** com a balança de freio, marcha, velocidade, luzes de troca, volante e a linha de combustível. Em Configurações escolha o que aparece, o tamanho, a transparência geral e a do fundo (o fundo pode ficar quase invisível com os pedais sólidos). O chip **TCC** só aparece nos jogos e carros que têm esse ajuste, e o **BB** só quando o jogo publica a balança de freio.
 
 ## Overlay de setores (BETA)
 
@@ -131,7 +131,8 @@ O AC EVO publica os dados do jogador na memória compartilhada, mas nada sobre o
 | Chave | Padrão | O que faz |
 |---|---|---|
 | `Scale` | `1.0` | Tamanho do overlay de pedais, de 0.4 a 3.0 |
-| `Opacity` | `0.94` | Transparência do overlay de pedais |
+| `Opacity` | `0.94` | Transparência do overlay de pedais inteiro (pedais, marcha, volante e fundo), 0.2 a 1.0 |
+| `BgOpacity` | `1.0` | Só o fundo do painel do overlay de pedais, 0.0 a 1.0, multiplicado pelo `Opacity` (abaixe para manter os pedais sólidos com o fundo transparente) |
 | `Wheel` | `assets\wheel.png` | Imagem do volante (PNG quadrado, fundo transparente) |
 | `InvertSteer` | `0` | Inverte o giro do volante |
 | `AccSteerLock` / `Ams2SteerLock` / `LmuSteerLock` | `540` | Giro total do volante em graus (o LMU usa o valor do jogo quando existe) |

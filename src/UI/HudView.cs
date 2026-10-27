@@ -38,6 +38,7 @@ namespace SimracingBR
                     AidColors = true, InvertSteer;
         public Color CClutch, CBrake, CThrottle, CAbs, CTc, CShiftA, CShiftB;
         public ImageSource Wheel;
+        public double BgOpacity = 1;             // panel background alpha 0..1, on top of the window opacity
 
         // computed by Relayout()
         double colW, colX, colY, colH, contentH, graphW, gearX, wheelX, wheelS;
@@ -185,7 +186,7 @@ namespace SimracingBR
         protected override void OnRender(DrawingContext dc)
         {
             Brush white = Br(255, 245, 245, 245), gray = Br(255, 140, 140, 150);
-            dc.DrawRoundedRectangle(Br(235, 14, 14, 18), Unlocked ? new Pen(Br(255, 255, 200, 0), 1.5) { DashStyle = DashStyles.Dash } : null,
+            dc.DrawRoundedRectangle(Br((byte)Math.Max(1, Math.Round(235 * BgOpacity)), 14, 14, 18), Unlocked ? new Pen(Br(255, 255, 200, 0), 1.5) { DashStyle = DashStyles.Dash } : null,
                 new Rect(0, 0, Width, Height), 6, 6);
             dc.DrawRectangle(Br(Chrome.Stripe), null, new Rect(0, 0, 3, Height));
 
