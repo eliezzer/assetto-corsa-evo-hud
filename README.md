@@ -29,9 +29,9 @@ The app detects which game is running by itself. No SimHub and nothing to instal
 A ready-to-run build for Windows (nothing to install: it only needs the .NET Framework that ships with Windows). Download the zip from a release, extract it and run `SimracingBR.exe`, keeping the `assets` folder next to it.
 
 - [SimracingBR-overlay releases](https://github.com/eliezzer/SimracingBR-overlay/releases) (v0.2.0)
-- [assetto-corsa-evo-hud releases](https://github.com/eliezzer/assetto-corsa-evo-hud/releases) (v2.0.0, the same program)
+- [assetto-corsa-evo-hud releases](https://github.com/eliezzer/assetto-corsa-evo-hud/releases) (v2.1.0, the newest: online fuel fixes, pedals background transparency, stripe color)
 
-Both repositories hold the same code, and the version the program shows in the tray tooltip is its own (0.2.0). The program is not code-signed, so Windows may show a SmartScreen warning the first time: choose *More info* → *Run anyway*. You can also build it yourself, see [Build](#build).
+SimracingBR-overlay v0.2.0 is the same program as assetto-corsa-evo-hud v2.0.0; v2.1.0 is only here for now. The version the program shows in the tray tooltip is its own (0.3.0 for v2.1.0). The program is not code-signed, so Windows may show a SmartScreen warning the first time: choose *More info* → *Run anyway*. You can also build it yourself, see [Build](#build).
 
 ## Per-game setup
 
