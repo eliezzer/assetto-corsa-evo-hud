@@ -29,9 +29,9 @@ O app descobre sozinho qual jogo está aberto. Não precisa de SimHub nem de ins
 Uma versão pronta para rodar no Windows (não precisa instalar nada: só do .NET Framework que já vem no Windows). Baixe o zip de uma release, extraia e rode `SimracingBR.exe`, mantendo a pasta `assets` ao lado dele.
 
 - [Releases do SimracingBR-overlay](https://github.com/eliezzer/SimracingBR-overlay/releases) (v0.2.0)
-- [Releases do assetto-corsa-evo-hud](https://github.com/eliezzer/assetto-corsa-evo-hud/releases) (v2.0.0, o mesmo programa)
+- [Releases do assetto-corsa-evo-hud](https://github.com/eliezzer/assetto-corsa-evo-hud/releases) (v2.1.0, a mais nova: correções do combustível online, transparência do fundo dos pedais, cor da faixa)
 
-Os dois repositórios têm o mesmo código, e a versão que o programa mostra na dica do ícone da bandeja é a dele (0.2.0). O programa não é assinado, então o Windows pode mostrar um aviso do SmartScreen na primeira vez: escolha *Mais informações* → *Executar assim mesmo*. Você também pode compilar você mesmo, veja [Compilar](#compilar).
+O SimracingBR-overlay v0.2.0 é o mesmo programa do assetto-corsa-evo-hud v2.0.0; a v2.1.0 por enquanto só existe aqui. A versão que o programa mostra na dica do ícone da bandeja é a dele (0.3.0 na v2.1.0). O programa não é assinado, então o Windows pode mostrar um aviso do SmartScreen na primeira vez: escolha *Mais informações* → *Executar assim mesmo*. Você também pode compilar você mesmo, veja [Compilar](#compilar).
 
 ## Configuração de cada jogo
 

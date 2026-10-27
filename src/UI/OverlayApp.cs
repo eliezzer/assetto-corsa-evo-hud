@@ -22,7 +22,7 @@ namespace SimracingBR
         [DllImport("user32.dll")] static extern IntPtr GetForegroundWindow();
         [DllImport("user32.dll")] static extern uint GetWindowThreadProcessId(IntPtr h, out uint pid);
         static readonly uint OwnPid = (uint)System.Diagnostics.Process.GetCurrentProcess().Id;
-        const string App = "SimracingBR", Ver = "0.2.0";
+        const string App = "SimracingBR", Ver = "0.3.0";
 
         readonly Settings cfg;
         readonly Tele tele = new Tele();
