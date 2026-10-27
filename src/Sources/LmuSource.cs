@@ -265,7 +265,7 @@ namespace SimracingBR
             t.SessionLaps = maxLaps > 0 && maxLaps < 10000 ? maxLaps : 0;
             double endET = BitConverter.ToDouble(si, S_ENDET), curET = BitConverter.ToDouble(si, S_CURET), left = endET - curET;
             t.SessionTimeLeftMs = left > 0 && left < 360000 ? (int)(left * 1000) : -1;
-            if (vehIdx >= 0) t.LapCount = BitConverter.ToInt16(veh, vehIdx * VEH_LEN + V_TOTALLAPS);
+            if (vehIdx >= 0) { t.LapCount = BitConverter.ToInt16(veh, vehIdx * VEH_LEN + V_TOTALLAPS); t.Position = Pos(veh[vehIdx * VEH_LEN + V_PLACE], t.Drivers); }
             t.TcMax = tb[T_TCMAX] > 0 ? tb[T_TCMAX] : -1; t.TcCutMax = tb[T_TCCUTMAX] > 0 ? tb[T_TCCUTMAX] : -1; t.AbsMax = tb[T_ABSMAX] > 0 ? tb[T_ABSMAX] : -1;
             if (tb[T_MAPMAX] > 0) { t.EngineMap = tb[T_MAP]; t.EngineMapMax = tb[T_MAPMAX]; }
             double rear = D(T_REARBIAS);

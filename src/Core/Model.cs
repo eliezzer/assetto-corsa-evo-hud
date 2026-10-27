@@ -39,6 +39,7 @@ namespace SimracingBR
         public bool HasLeader;                     // the game publishes the race leader's lap times
         public int LeaderBestMs, LeaderLastMs;     // 0 = none yet
         public int Drivers;                        // drivers in the session, 0 = unknown
+        public int Position;                       // the player's position in the session (1 = first), 0 = unknown
         public int[] SessionBestSecMs = new int[3]; // fastest main-sector times of anyone in the session (ms, 0 = unknown)
         public int SessionBestMs;                  // fastest lap of anyone in the session, 0 = unknown
         public string TrackId = "";                // track + car: start from scratch when either changes
@@ -64,7 +65,7 @@ namespace SimracingBR
         // forget the optional fuel / electronics values of the previous game or car
         public void ClearExtras()
         {
-            LapCount = -1; SessionLaps = 0; SessionTimeLeftMs = -1; SessionIsRace = false; FuelCap = 0; RaceLengthSec = RaceLengthLaps = 0;
+            LapCount = -1; Position = 0; SessionLaps = 0; SessionTimeLeftMs = -1; SessionIsRace = false; FuelCap = 0; RaceLengthSec = RaceLengthLaps = 0;
             TcMax = TcCutMax = AbsMax = EscLevel = EscMax = EngineMap = EngineMapMax = -1;
             BrakeBias = DiffPower = DiffCoast = BatteryPct = EnergyPct = -1; Drs = -1;
             for (int i = 0; i < 4; i++) TyrePsi[i] = TyreTemp[i] = TyreColdPsi[i] = -1;
@@ -96,6 +97,7 @@ namespace SimracingBR
         public abstract string Name { get; }
         public abstract string[] Processes { get; }
         public string Error { get { return error; } }
+        protected static int Pos(int p, int drivers) { return p >= 1 && p <= (drivers > 0 ? drivers : 999) ? p : 0; }   // 1-based position, 0 = unknown
         // Only open the maps while the game process runs (needed when another game uses the same map names).
         protected virtual bool RequireProcess { get { return false; } }
 

@@ -68,7 +68,7 @@ namespace SimracingBR
         static int S(string f) { return (int)Marshal.OffsetOf(typeof(AccStatic), f); }
         static readonly int G_STATUS = G("status"), G_LAPMS = G("iCurrentTime"), G_INPIT = G("isInPit"), G_PITLANE = G("isInPitLane"),
             G_SETUP = G("isSetupMenuVisible"), G_TC = G("TC"), G_TCCUT = G("TCCut"), G_ABS = G("ABS"),
-            G_FUELLAP = G("fuelXLap"), G_LAPSLEFT = G("fuelEstimatedLaps"), G_LAPS = G("completedLaps"),
+            G_FUELLAP = G("fuelXLap"), G_LAPSLEFT = G("fuelEstimatedLaps"), G_LAPS = G("completedLaps"), G_POS = G("position"),
             G_DRIVERS = G("activeCars"), G_SESSIONTYPE = G("session"), G_TIMELEFT = G("sessionTimeLeft"), G_NUMLAPS = G("numberOfLaps"), G_MAP = G("EngineMap"), G_NPOS = G("normalizedCarPosition"), G_SECTOR = G("currentSectorIndex"), G_LAST = G("iLastTime"), G_BEST = G("iBestTime"), G_VALID = G("isValidLap");
         static readonly int GFX_LEN = G("fuelEstimatedLaps") + 4;
         static readonly int S_MAXRPM = S("maxRpm"), S_MAXFUEL = S("maxFuel"), S_SMVER = S("smVersion"), S_TRACK = S("track"), S_CAR = S("carModel");
@@ -133,6 +133,7 @@ namespace SimracingBR
             t.ClearExtras();
             FillTyres(t, pb);
             t.LapCount = BitConverter.ToInt32(gb, G_LAPS);
+            t.Position = Pos(BitConverter.ToInt32(gb, G_POS), t.Drivers);
             float maxFuel = BitConverter.ToSingle(sb, S_MAXFUEL);
             t.FuelCap = maxFuel > 0 && maxFuel < 1000 ? maxFuel : 0;
             t.SessionIsRace = BitConverter.ToInt32(gb, G_SESSIONTYPE) == 2;

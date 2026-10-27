@@ -8,7 +8,7 @@ namespace SimracingBR
 {
     public class FuelView : FrameworkElement, IOverlayView
     {
-        const double PAD = 12, W = 258, ROW = 30, BAR_H = 6, GAP = 8, SUG_H = 58;
+        const double PAD = 12, W = 258, ROW = 30, BAR_H = 6, GAP = 8, SUG_H = 86;
         const double FL = 12, FV = 20, FU = 12;           // label / value / unit font sizes (same as the pedals overlay)
 
         public Tele T = new Tele();
@@ -97,12 +97,14 @@ namespace SimracingBR
             Chrome.Text(this, dc, L.T("SUGGESTED RACE FUEL", "COMBUSTÍVEL SUGERIDO"), FL, gray, true, x + 10, y + 11, 0);
             string val = M.RaceFuel < 0 ? "--" : M.RaceFuel.ToString("0.0", CultureInfo.InvariantCulture) + " L";
             Chrome.Text(this, dc, val, 24, M.RaceFuel < 0 ? white : amber, true, x + w - 10, y + 5, 2);
+            // the race length, as big as the other rows: the number everything else depends on
+            string len = M.TimedRace && M.RaceMinutes > 0 ? M.RaceMinutes + " min" : (!M.TimedRace && M.RaceLaps > 0 ? M.RaceLaps.ToString("0", CultureInfo.InvariantCulture) + L.T(" laps", " voltas") : "--");
+            Row(dc, x, y + 34, w, L.T("RACE LENGTH", "DURAÇÃO DA CORRIDA"), len, "", white);
             string sub;
             if (M.RaceFuel >= 0)
             {
                 sub = M.RaceLaps.ToString("0.0", CultureInfo.InvariantCulture) + L.T(" laps", " voltas");
-                if (M.TimedRace && M.RaceMinutes > 0) sub += " (" + M.RaceMinutes + " min)";
-                sub += "  ·  " + M.PerLap.ToString("0.00", CultureInfo.InvariantCulture) + " L" + L.T("/lap", "/volta");
+                sub +="  ·  " + M.PerLap.ToString("0.00", CultureInfo.InvariantCulture) + " L" + L.T("/lap", "/volta");
                 if (M.TimedRace) sub += "  ·  " + L.T("lap ", "volta ") + Chrome.Time(M.BestValidLapMs > 0 ? M.BestValidLapMs : T.BestLapMs);
                 if (M.RaceSource == 3) sub += "  ·  " + L.T("last race", "última corrida");
                 else if (M.RaceSource == 4) sub += "  ·  " + L.T("from the game", "do jogo");
@@ -111,7 +113,7 @@ namespace SimracingBR
             else if (M.PerLap <= 0) sub = L.T("measuring consumption (one full lap)...", "medindo o consumo (uma volta completa)...");
             else if (M.RaceLaps < 0 && !M.TimedRace) sub = L.T("set the race length in Settings (laps or minutes)", "defina a duração da corrida nas Configurações (voltas ou minutos)");
             else sub = L.T("needs a valid lap to know the lap time", "precisa de uma volta válida para saber o tempo de volta");
-            Chrome.Text(this, dc, sub, 10.5, gray, false, x + 10, y + 38, 0);
+            Chrome.Text(this, dc, sub, 10.5, gray, false, x + 10, y + 66, 0);
         }
     }
 }

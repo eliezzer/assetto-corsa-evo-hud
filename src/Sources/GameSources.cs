@@ -80,7 +80,7 @@ namespace SimracingBR
             double u = lap / Lap, amp = 0.045 * Math.Sin(lapIdx * 2.1 + 1.0);
             t.TrackPos = (float)Math.Max(0, Math.Min(1, u + amp * Math.Sin(6 * Math.PI * u)));
             t.Sector = -1; t.LapValid = true; t.InPitLane = false; t.TrackId = "demo";
-            t.HasLeader = true; t.LeaderBestMs = 59412; t.SessionBestMs = 59999; t.Drivers = 1;
+            t.HasLeader = true; t.LeaderBestMs = 59412; t.SessionBestMs = 59999; t.Drivers = 1; t.Position = 1;
             // fuel / electronics demo: a 30 minute race, a GT3-like car with some hybrid extras so every card shows
             t.LapCount = lapIdx; t.FuelCap = 100; t.SessionIsRace = true; t.SessionLaps = 0;
             t.SessionTimeLeftMs = (int)((1800 - s % 1800) * 1000); t.BestLapMs = 59999;

@@ -7,7 +7,7 @@ Um conjunto de overlays de telemetria para simuladores de corrida, desenhados so
 | Overlay | O que mostra | Padrão |
 |---|---|---|
 | **Pedais** | Gráfico e barras dos pedais (embreagem, freio, acelerador) que mudam de cor quando ABS/TC atuam, níveis de ABS / TC / TCC, balança de freio, marcha, velocidade, luzes de troca, um volante que gira e a linha de combustível | ligado |
-| **Setores** (BETA) | Volta atual / melhor / última, a melhor volta do líder e S1 / S2 / S3 divididos em subsetores pintados de roxo / verde / cinza, como o app CMRT do Assetto Corsa 1 | ligado |
+| **Setores** (BETA) | Volta atual / melhor / última, a melhor volta do líder, sua posição e volta, e S1 / S2 / S3 divididos em subsetores pintados de roxo / verde / cinza, como o app CMRT do Assetto Corsa 1 | ligado |
 | **Combustível** (BETA) | Combustível no tanque, consumo por volta, voltas restantes e o **combustível sugerido para a corrida inteira** | desligado |
 | **Eletrônica** | Chips de ABS / TC / TCC / ESC, balança de freio, mapa do motor, diferencial, bateria do híbrido, energia virtual, DRS | desligado |
 | ~~Pneus~~ | Assistente de pressão dos pneus: desligado por enquanto (veja [abaixo](#assistente-de-pressão-dos-pneus-desligado)) | – |
@@ -29,9 +29,9 @@ O app descobre sozinho qual jogo está aberto. Não precisa de SimHub nem de ins
 Uma versão pronta para rodar no Windows (não precisa instalar nada: só do .NET Framework que já vem no Windows). Baixe o zip de uma release, extraia e rode `SimracingBR.exe`, mantendo a pasta `assets` ao lado dele.
 
 - [Releases do SimracingBR-overlay](https://github.com/eliezzer/SimracingBR-overlay/releases) (v0.2.0)
-- [Releases do assetto-corsa-evo-hud](https://github.com/eliezzer/assetto-corsa-evo-hud/releases) (v2.1.0, a mais nova: correções do combustível online, transparência do fundo dos pedais, cor da faixa)
+- [Releases do assetto-corsa-evo-hud](https://github.com/eliezzer/assetto-corsa-evo-hud/releases) (v2.2.0, a mais nova: duração da corrida em destaque no combustível, posição e volta no overlay de setores)
 
-O SimracingBR-overlay v0.2.0 é o mesmo programa do assetto-corsa-evo-hud v2.0.0; a v2.1.0 por enquanto só existe aqui. A versão que o programa mostra na dica do ícone da bandeja é a dele (0.3.0 na v2.1.0). O programa não é assinado, então o Windows pode mostrar um aviso do SmartScreen na primeira vez: escolha *Mais informações* → *Executar assim mesmo*. Você também pode compilar você mesmo, veja [Compilar](#compilar).
+O SimracingBR-overlay v0.2.0 é o mesmo programa do assetto-corsa-evo-hud v2.0.0; da v2.1.0 em diante, por enquanto, só existem aqui. A versão que o programa mostra na dica do ícone da bandeja é a dele (0.4.0 na v2.2.0). O programa não é assinado, então o Windows pode mostrar um aviso do SmartScreen na primeira vez: escolha *Mais informações* → *Executar assim mesmo*. Você também pode compilar você mesmo, veja [Compilar](#compilar).
 
 ## Configuração de cada jogo
 
@@ -56,7 +56,7 @@ Gráfico e barras dos pedais, chips de ABS / TC / TCC (acendem enquanto o auxíl
 
 ## Overlay de setores (BETA)
 
-Volta atual / melhor / última, a melhor volta do líder (só LMU e AMS2) e S1 / S2 / S3 com 8 subsetores cada um (de 1 a 12 em Configurações).
+Volta atual / melhor / última, a melhor volta do líder (só LMU e AMS2), sua posição e a volta em que você está, e S1 / S2 / S3 com 8 subsetores cada um (de 1 a 12 em Configurações).
 
 Os jogos só publicam os 3 setores principais (alguns nem isso), então o overlay cronometra cada trecho sozinho, com a posição na volta e o relógio dele; todos os jogos publicam a posição. As cores funcionam como no app CMRT do Assetto Corsa 1: cada trecho é pintado assim que você o percorre, e tudo volta a escuro depois da linha de chegada:
 
@@ -71,11 +71,11 @@ O tempo da volta atual fica vermelho quando a volta é inválida e roxo enquanto
 
 ## Overlay de combustível (BETA)
 
-Combustível no tanque (com barra de nível), consumo por volta, voltas restantes no tanque e **COMBUSTÍVEL SUGERIDO**: o combustível para a **corrida inteira** (nunca "quanto completar").
+Combustível no tanque (com barra de nível), consumo por volta, voltas restantes no tanque e **COMBUSTÍVEL SUGERIDO**: o combustível para a **corrida inteira** (nunca "quanto completar"), com a **duração da corrida** usada na conta.
 
 ```
 combustível sugerido = (voltas da corrida + margem de segurança) * consumo por volta
-voltas da corrida    = as voltas da corrida, ou: tempo da corrida / sua volta válida mais rápida + 0,5   (corrida por tempo)
+voltas da corrida    = as voltas da corrida, ou: tempo da corrida / sua volta válida mais rápida + 1     (corrida por tempo)
 ```
 
 - **Consumo**: vem do jogo quando ele tem, senão é medido em voltas limpas. Fica guardado por pista e carro.

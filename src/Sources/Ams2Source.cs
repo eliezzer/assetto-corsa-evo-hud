@@ -207,7 +207,7 @@ namespace SimracingBR
             t.SessionLaps = lapsInEvent > 0 && lapsInEvent < 10000 ? (int)lapsInEvent : 0;
             float left = F(EVENTLEFT);
             t.SessionTimeLeftMs = left > 0 && left < 360000 ? (int)(left * 1000) : -1;
-            if (vi >= 0 && vi < MAXP) t.LapCount = (int)U(PART + vi * PART_LEN + P_LAPSDONE);
+            if (vi >= 0 && vi < MAXP) { t.LapCount = (int)U(PART + vi * PART_LEN + P_LAPSDONE); t.Position = Pos((int)U(PART + vi * PART_LEN + P_RACEPOS), t.Drivers); }
             float bb = F(BRAKEBIAS);
             t.BrakeBias = bb > 0.2f && bb < 0.95f ? bb : -1;
             uint drs = U(DRSSTATE);
