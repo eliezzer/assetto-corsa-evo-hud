@@ -36,6 +36,7 @@ namespace SimracingBR
         }
 
         public double Margin { get { return View.M.MarginLaps; } }
+        public double RaceFuel { get { return View.M.RaceFuel; } }   // shown on the pedals HUD too
         public int RaceLaps { get { return View.M.ManualRaceLaps; } }
         public int RaceMinutes { get { return View.M.ManualRaceMinutes; } }
 
