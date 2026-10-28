@@ -43,6 +43,8 @@ namespace SimracingBR
         public int[] SessionBestSecMs = new int[3]; // fastest main-sector times of anyone in the session (ms, 0 = unknown)
         public int SessionBestMs;                  // fastest lap of anyone in the session, 0 = unknown
         public string TrackId = "";                // track + car: start from scratch when either changes
+        public int CarSlots;                       // the game says where the other cars are: slots 1..CarSlots-1 of CarPos (AC EVO), 0 = it does not
+        public float[] CarPos = new float[64];     // lap position (0..1) of the car in each slot, -1 = none / off the track / just jumped
         // session / fuel (fuel overlay)
         public int LapCount = -1;                  // laps the player has completed, -1 = unknown
         public int SessionLaps;                    // race length in laps, 0 = unknown or time based
@@ -65,6 +67,7 @@ namespace SimracingBR
         // forget the optional fuel / electronics values of the previous game or car
         public void ClearExtras()
         {
+            CarSlots = 0;
             LapCount = -1; Position = 0; SessionLaps = 0; SessionTimeLeftMs = -1; SessionIsRace = false; FuelCap = 0; RaceLengthSec = RaceLengthLaps = 0;
             TcMax = TcCutMax = AbsMax = EscLevel = EscMax = EngineMap = EngineMapMax = -1;
             BrakeBias = DiffPower = DiffCoast = BatteryPct = EnergyPct = -1; Drs = -1;

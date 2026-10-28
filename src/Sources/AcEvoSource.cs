@@ -1,5 +1,6 @@
 // Assetto Corsa EVO: Local\acevo_pmf_physics / Local\acevo_pmf_graphics.
 using System;
+using System.Diagnostics;
 using System.Globalization;
 using System.Runtime.InteropServices;
 
@@ -94,7 +95,15 @@ namespace SimracingBR
 
         // the static page (4 KB) has the track at 136 and its layout at 169 (found with --dump); only used to tell tracks apart
         const int STATIC_LEN = 4096, S_TRACK = 136, S_LAYOUT = 169;
-        public AcEvoSource() : base(new[] { "Local\\acevo_pmf_physics", "Local\\acevo_pmf_graphics", "Local\\acevo_pmf_static" }, new[] { AcPhys.LEN, GFX_LEN, STATIC_LEN }) { }
+        // world coordinates (x, y, z floats) of every car in the session, slot 0 = the player (found by the EvoRadar plugin)
+        const int CARS = 3124, MAXCARS = 60;
+        public readonly float[] X = new float[MAXCARS], Y = new float[MAXCARS], Z = new float[MAXCARS], Dist = new float[MAXCARS];
+        public readonly TrackLine Line = new TrackLine();
+        public int Slots;
+        readonly int[] hint = new int[MAXCARS];
+        readonly double[] lastMs = new double[MAXCARS];
+        string lineKey = "";
+        public AcEvoSource() : base(new[] { "Local\\acevo_pmf_physics", "Local\\acevo_pmf_graphics", "Local\\acevo_pmf_static" }, new[] { AcPhys.LEN, Math.Max(GFX_LEN, CARS + MAXCARS * 12), STATIC_LEN }) { }
 
         public override string Name { get { return "AC EVO"; } }
         public override string[] Processes { get { return new[] { "AssettoCorsaEVO" }; } }
@@ -141,6 +150,7 @@ namespace SimracingBR
             t.TrackId = Str(Pages[2], S_TRACK, 32, false) + "/" + Str(Pages[2], S_LAYOUT, 32, false) + "|" + Str(gb, G_CAR, 33, false);
             // session / fuel / electronics for the fuel and electronics overlays
             t.ClearExtras();
+            Cars(t, gb);
             FillTyres(t, pb);
             t.LapCount = BitConverter.ToInt32(gb, G_LAPCOUNT);
             t.Position = Pos((int)BitConverter.ToUInt32(gb, G_POS), t.Drivers);
@@ -168,6 +178,41 @@ namespace SimracingBR
             if (float.IsNaN(t.Fuel) || t.Fuel < 0 || t.Fuel > 1000) t.Fuel = 0;
             if (float.IsNaN(t.FuelPerLap) || t.FuelPerLap < 0 || t.FuelPerLap > 100) t.FuelPerLap = 0;
             return true;
+        }
+
+        // Lap positions of the other cars: AC EVO only gives their world coordinates, so they are projected onto the line
+        // learned from the player's own laps. A car far from the line (pit lane, off track) or that jumped (reset to the pits,
+        // slot taken by another driver) gets -1, which makes the sectors tracker drop the stretch it was timing.
+        const float OffLine = 15;    // m
+        readonly bool[] jumped = new bool[MAXCARS];
+        void Cars(Tele t, byte[] gb)
+        {
+            string key = Str(Pages[2], S_TRACK, 32, false) + "/" + Str(Pages[2], S_LAYOUT, 32, false);
+            if (key != lineKey) { lineKey = key; Line.Use(key, AppDomain.CurrentDomain.BaseDirectory); for (int i = 0; i < MAXCARS; i++) hint[i] = -1; }
+            double ms = Stopwatch.GetTimestamp() * 1000.0 / Stopwatch.Frequency;
+            Slots = 0;
+            for (int i = 0; i < MAXCARS; i++)
+            {
+                int o = CARS + i * 12;
+                float nx = BitConverter.ToSingle(gb, o), ny = BitConverter.ToSingle(gb, o + 4), nz = BitConverter.ToSingle(gb, o + 8);
+                jumped[i] = false;
+                if (nx != X[i] || ny != Y[i] || nz != Z[i])
+                {
+                    double step = Math.Sqrt((nx - X[i]) * (nx - X[i]) + (nz - Z[i]) * (nz - Z[i]));
+                    jumped[i] = lastMs[i] > 0 && step > 10 + 100 * (ms - lastMs[i]) / 1000;     // faster than 360 km/h
+                    X[i] = nx; Y[i] = ny; Z[i] = nz; lastMs[i] = ms;
+                }
+                if (nx != 0 || ny != 0 || nz != 0) Slots = i + 1;
+            }
+            if (t.Live && !t.InPitLane && t.LapValid && t.TrackPos > 0 && t.SpeedKmh > 30 && Slots > 0 && !jumped[0] && key.Length > 1)
+                Line.Learn(t.TrackPos, X[0], Y[0], Z[0]);
+            t.CarSlots = Line.Ready ? Math.Min(Slots, t.CarPos.Length) : 0;
+            for (int i = 1; i < MAXCARS; i++)
+            {
+                if (i >= t.CarSlots || (X[i] == 0 && Y[i] == 0 && Z[i] == 0)) { hint[i] = -1; Dist[i] = -1; if (i < t.CarPos.Length) t.CarPos[i] = -1; continue; }
+                float p = Line.Project(X[i], Y[i], Z[i], ref hint[i], out Dist[i]);
+                t.CarPos[i] = jumped[i] || Dist[i] > OffLine ? -1 : p;
+            }
         }
 
         public override string Probe()

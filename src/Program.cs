@@ -1,4 +1,4 @@
-// Entry point: SimracingBR.exe [--demo] [--settings] [--probe] [--dump]
+// Entry point: SimracingBR.exe [--demo] [--settings] [--probe] [--dump] [--cars]
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -24,6 +24,7 @@ namespace SimracingBR
             string dir = AppDomain.CurrentDomain.BaseDirectory;
             if (Array.IndexOf(args, "--probe") >= 0) return Probe(dir);
             if (Array.IndexOf(args, "--dump") >= 0) return Dump(dir);
+            if (Array.IndexOf(args, "--cars") >= 0) return RecordCars(dir);
             bool demo = Array.IndexOf(args, "--demo") >= 0;
             var cfg = new Settings(Path.Combine(dir, "settings.ini"));
             var app = new Application();
@@ -97,6 +98,54 @@ namespace SimracingBR
                     var wait = start.AddSeconds(sec + 1) - DateTime.UtcNow;
                     if (wait > TimeSpan.Zero) System.Threading.Thread.Sleep(wait);
                 }
+            }
+            return 0;
+        }
+
+        // AC EVO: writes cars.log with every car's world coordinates (5 per second) and the sector / lap times the overlay
+        // measures for the other drivers from them (60 per second), to compare with the game's results file at the end of the
+        // session. Runs until AC EVO has been closed for a minute (at most 3 hours); can run next to the overlay.
+        static int RecordCars(string dir)
+        {
+            var src = new AcEvoSource(); var t = new Tele();
+            var trk = new SectorTracker(null, 8);
+            var clock = System.Diagnostics.Stopwatch.StartNew();
+            var ic = CultureInfo.InvariantCulture;
+            using (var w = new StreamWriter(Path.Combine(dir, "cars.log"), false))
+            {
+                trk.RivalTimed = (k, what, ms) => w.WriteLine(clock.ElapsedMilliseconds + " T " + k + " " + what + " " + ms.ToString("0", ic));
+                var end = DateTime.UtcNow.AddHours(3); var lastLive = DateTime.UtcNow;
+                long nextRaw = 0, nextFlush = 0;
+                var seen = new float[60]; var updates = new int[60];
+                while (DateTime.UtcNow < end && (DateTime.UtcNow - lastLive).TotalSeconds < 60)
+                {
+                    if (src.Read(t)) lastLive = DateTime.UtcNow;
+                    trk.Update(t);
+                    for (int i = 0; i < 60; i++) if (src.X[i] != seen[i]) { seen[i] = src.X[i]; updates[i]++; }
+                    long now = clock.ElapsedMilliseconds;
+                    if (now >= nextRaw)
+                    {
+                        nextRaw = now + 200;
+                        var sb = new System.Text.StringBuilder();
+                        sb.Append(now).Append(" P npos=").Append(t.TrackPos.ToString("0.0000", ic)).Append(" lapMs=").Append(t.LapMs)
+                          .Append(" last=").Append(t.LastLapMs).Append(" best=").Append(t.BestLapMs).Append(" valid=").Append(t.LapValid ? 1 : 0)
+                          .Append(" pit=").Append(t.InPitLane ? 1 : 0).Append(" live=").Append(t.Live ? 1 : 0).Append(" drivers=").Append(t.Drivers)
+                          .Append(" slots=").Append(src.Slots).Append(" line=").Append(src.Line.Ready ? src.Line.LengthM.ToString("0", ic) : "learning")
+                          .Append(" seg=").Append(trk.CurSeg).Append(" track='").Append(t.TrackId).Append("' |");
+                        for (int i = 0; i < src.Slots; i++)
+                        {
+                            if (src.X[i] == 0 && src.Y[i] == 0 && src.Z[i] == 0) continue;
+                            sb.Append(' ').Append(i).Append('(').Append(src.X[i].ToString("0.0", ic)).Append(',').Append(src.Y[i].ToString("0.0", ic)).Append(',').Append(src.Z[i].ToString("0.0", ic));
+                            if (i > 0 && t.CarSlots > i) sb.Append(" p=").Append(t.CarPos[i].ToString("0.0000", ic)).Append(" d=").Append(src.Dist[i].ToString("0.0", ic));
+                            sb.Append(" u=").Append(updates[i]).Append(')');
+                            updates[i] = 0;
+                        }
+                        w.WriteLine(sb.ToString());
+                    }
+                    if (now >= nextFlush) { nextFlush = now + 1000; w.Flush(); }
+                    System.Threading.Thread.Sleep(15);
+                }
+                src.Line.Save();
             }
             return 0;
         }
