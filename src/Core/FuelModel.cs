@@ -1,6 +1,7 @@
 // Fuel maths for the fuel overlay: consumption per lap, laps left on the tank and the fuel needed for the WHOLE race.
 //
-//   per lap      = what the game says, otherwise the average of the last clean laps measured here
+//   per lap      = the average of the last clean laps measured here (kept between sessions and runs), otherwise what the game says
+//                  (AC EVO resets its own value when the session changes)
 //   laps left    = fuel in the tank / per lap
 //   race laps    = the race's total laps                                           (lap race)
 //                = total race time / fastest valid lap + 1                           (timed race; the lap running when time runs out is finished,
@@ -38,7 +39,7 @@ namespace SimracingBR
 
         // lap in progress
         int prevLapMs, prevLapCount = -1;
-        float lapStartFuel;
+        float lapStartFuel, lastFuel;
         bool observedFromStart, lapValid = true, lapPit;
         readonly double[] recent = new double[3];
         int recentN;
@@ -61,6 +62,9 @@ namespace SimracingBR
             if (!t.LapValid) lapValid = false;
             if (t.InPitLane || t.InPitBox) lapPit = true;
             if (lapStartFuel <= 0 && t.Fuel > 0) lapStartFuel = t.Fuel;
+            // refuelled or a new session: the lap in progress can't be measured
+            if (t.Fuel > lastFuel + 0.5f) { observedFromStart = false; lapStartFuel = t.Fuel; }
+            lastFuel = t.Fuel;
 
             bool rollover = (t.LapCount >= 0 && prevLapCount >= 0 && t.LapCount > prevLapCount)
                          || (t.LapCount < 0 && prevLapMs > 5000 && t.LapMs < prevLapMs - 2000);
@@ -71,7 +75,8 @@ namespace SimracingBR
             if (t.SessionIsRace && t.SessionTimeLeftMs > raceStartClockMs) raceStartClockMs = t.SessionTimeLeftMs;
             if (!t.SessionIsRace) raceStartClockMs = 0;
 
-            PerLap = t.FuelPerLap > 0.01f ? t.FuelPerLap : Measured();
+            double m = Measured();
+            PerLap = m > 0.01 ? m : (t.FuelPerLap > 0.01f ? t.FuelPerLap : 0);
             LapsLeft = PerLap > 0.01 && t.Fuel > 0 ? t.Fuel / PerLap : 0;
             Race(t);
         }
@@ -79,7 +84,7 @@ namespace SimracingBR
         void Reset()
         {
             recentN = 0; BestValidLapMs = 0; storedPerLap = 0; observedFromStart = false; lapValid = true; lapPit = false;
-            lapStartFuel = 0; prevLapMs = 0; prevLapCount = -1; raceStartClockMs = 0;
+            lapStartFuel = lastFuel = 0; prevLapMs = 0; prevLapCount = -1; raceStartClockMs = 0;
         }
 
         double Measured()
