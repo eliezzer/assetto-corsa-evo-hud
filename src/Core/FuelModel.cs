@@ -62,8 +62,8 @@ namespace SimracingBR
             if (!t.LapValid) lapValid = false;
             if (t.InPitLane || t.InPitBox) lapPit = true;
             if (lapStartFuel <= 0 && t.Fuel > 0) lapStartFuel = t.Fuel;
-            // refuelled or a new session: the lap in progress can't be measured
-            if (t.Fuel > lastFuel + 0.5f) { observedFromStart = false; lapStartFuel = t.Fuel; }
+            // refuelled, fuel changed for a new session or the lap counter went back: the lap in progress can't be measured
+            if (Math.Abs(t.Fuel - lastFuel) > 0.5f || (t.LapCount >= 0 && t.LapCount < prevLapCount)) { observedFromStart = false; lapStartFuel = t.Fuel; }
             lastFuel = t.Fuel;
 
             bool rollover = (t.LapCount >= 0 && prevLapCount >= 0 && t.LapCount > prevLapCount)
