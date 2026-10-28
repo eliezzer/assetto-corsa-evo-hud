@@ -30,11 +30,12 @@ namespace SimracingBR
         public bool HasTcc = true;               // the game has a TC cut setting: show the TCC chip
         public double AbsDuty, TcDuty;           // 0..1 smoothed share of time the aid is cutting in
         public double LapsLeft, PerLap;          // computed by the model
+        public double RaceFuel = -1;             // suggested fuel for the whole race (fuel overlay model), -1 = unknown
 
         // what to show (Settings window / settings.ini); Relayout() reflows the HUD after any change
         public bool ShowGraph = true, ShowBars = true, ShowClutch = true, ShowAids = true,
                     ShowGear = true, ShowSpeed = true, ShowShiftLights = true, ShowWheel = true,
-                    ShowFuel = true, ShowFuelPerLap = true, ShowLapsLeft = true,
+                    ShowFuel = true, ShowFuelPerLap = true, ShowLapsLeft = true, ShowRaceFuel = true,
                     AidColors = true, InvertSteer;
         public Color CClutch, CBrake, CThrottle, CAbs, CTc, CShiftA, CShiftB;
         public ImageSource Wheel;
@@ -64,7 +65,7 @@ namespace SimracingBR
         {
             nBars = ShowBars ? (ShowClutch ? 3 : 2) : 0;
             double barsW = nBars > 0 ? 22 * nBars - 6 : 0;
-            bool fuelAny = ShowFuel || ShowFuelPerLap || ShowLapsLeft;
+            bool fuelAny = ShowFuel || ShowFuelPerLap || ShowLapsLeft || ShowRaceFuel;
             hasGear = ShowGear || ShowSpeed || ShowShiftLights;
             rowAids = false;
             // With the graph: [graph + bars] with the fuel strip below (chips live inside the graph).
@@ -74,7 +75,7 @@ namespace SimracingBR
             if (compact)
             {
                 // info column: fuel card on top, ABS / TC / TCC chips in one row below it (bigger font)
-                int nFuel = (ShowFuel ? 1 : 0) + (ShowFuelPerLap ? 1 : 0) + (ShowLapsLeft ? 1 : 0);
+                int nFuel = (ShowFuel ? 1 : 0) + (ShowFuelPerLap ? 1 : 0) + (ShowLapsLeft ? 1 : 0) + (ShowRaceFuel ? 1 : 0);
                 chipsW = ChipsOn ? ChipsW() : 0;
                 fuelCardH = nFuel > 0 ? nFuel * FUEL_ROW + 12 : 0;
                 double chipsH = ChipsOn ? CHIPROW : 0;
@@ -93,7 +94,7 @@ namespace SimracingBR
                 rowAids = ChipsOn && ShowGraph;      // ABS / TC / TCC chips: own row below the fuel strip
                 chipsW = rowAids ? ChipsW() : 0;
                 double wMain = (ShowGraph ? 300 : 0) + (ShowGraph && ShowBars ? 10 : 0) + barsW;
-                double wFuel = rowFuel ? 20 + (ShowFuel ? FuelItemW(LblFuel, "000.0", "L") : 0) + (ShowFuelPerLap ? FuelItemW(LblPerLap, "0.00", "L") : 0) + (ShowLapsLeft ? FuelItemW(LblLaps, "00.0", "") : 0) : 0;
+                double wFuel = rowFuel ? 20 + (ShowFuel ? FuelItemW(LblFuel, "000.0", "L") : 0) + (ShowFuelPerLap ? FuelItemW(LblPerLap, "0.00", "L") : 0) + (ShowLapsLeft ? FuelItemW(LblLaps, "00.0", "") : 0) + (ShowRaceFuel ? FuelItemW(LblRace, "000.0", "L") : 0) : 0;
                 colW = Math.Max(wMain, Math.Max(wFuel, chipsW));
                 graphW = ShowGraph ? colW - (ShowBars ? barsW + 10 : 0) : 0;   // graph absorbs any extra width
             }
@@ -243,7 +244,8 @@ namespace SimracingBR
                 double ry = iy + 6;
                 if (ShowFuel) { FuelRow(dc, x, ry, infoW, LblFuel, T.Fuel > 0 ? T.Fuel.ToString("0.0", CultureInfo.InvariantCulture) : "--", "L"); ry += FUEL_ROW; }
                 if (ShowFuelPerLap) { FuelRow(dc, x, ry, infoW, LblPerLap, PerLap > 0 ? PerLap.ToString("0.00", CultureInfo.InvariantCulture) : "--", "L"); ry += FUEL_ROW; }
-                if (ShowLapsLeft) FuelRow(dc, x, ry, infoW, LblLaps, LapsLeft > 0 ? LapsLeft.ToString("0.0", CultureInfo.InvariantCulture) : "--", "");
+                if (ShowLapsLeft) { FuelRow(dc, x, ry, infoW, LblLaps, LapsLeft > 0 ? LapsLeft.ToString("0.0", CultureInfo.InvariantCulture) : "--", ""); ry += FUEL_ROW; }
+                if (ShowRaceFuel) FuelRow(dc, x, ry, infoW, LblRace, RaceFuel > 0 ? RaceFuel.ToString("0.0", CultureInfo.InvariantCulture) : "--", "L");
                 iy += fuelCardH + 6;
             }
             if (ChipsOn) DrawAidsRow(dc, x, iy, infoW);
@@ -303,6 +305,7 @@ namespace SimracingBR
         static string LblFuel { get { return "FUEL"; } }
         static string LblPerLap { get { return L.T("FUEL / LAP", "CONSUMO / VOLTA"); } }
         static string LblLaps { get { return L.T("LAPS LEFT", "VOLTAS RESTANTES"); } }
+        static string LblRace { get { return L.T("RACE FUEL", "SUGERIDO"); } }
 
         // width of one item of the fuel strip: label, widest value, unit and a gap before the next item
         double FuelItemW(string label, string sample, string unit)
@@ -317,6 +320,7 @@ namespace SimracingBR
             if (ShowFuel) w = Math.Max(w, TextWidth(LblFuel, FL, true) + TextWidth("000.0", FV, true) + TextWidth("L", FU, false) + 3);
             if (ShowFuelPerLap) w = Math.Max(w, TextWidth(LblPerLap, FL, true) + TextWidth("0.00", FV, true) + TextWidth("L", FU, false) + 3);
             if (ShowLapsLeft) w = Math.Max(w, TextWidth(LblLaps, FL, true) + TextWidth("00.0", FV, true));
+            if (ShowRaceFuel) w = Math.Max(w, TextWidth(LblRace, FL, true) + TextWidth("000.0", FV, true) + TextWidth("L", FU, false) + 3);
             return w + 32;
         }
 
@@ -405,7 +409,8 @@ namespace SimracingBR
             double ix = x + 10;
             if (ShowFuel) { FuelItem(dc, ix, y, LblFuel, T.Fuel > 0 ? T.Fuel.ToString("0.0", CultureInfo.InvariantCulture) : "--", "L"); ix += FuelItemW(LblFuel, "000.0", "L"); }
             if (ShowFuelPerLap) { FuelItem(dc, ix, y, LblPerLap, PerLap > 0 ? PerLap.ToString("0.00", CultureInfo.InvariantCulture) : "--", "L"); ix += FuelItemW(LblPerLap, "0.00", "L"); }
-            if (ShowLapsLeft) FuelItem(dc, ix, y, LblLaps, LapsLeft > 0 ? LapsLeft.ToString("0.0", CultureInfo.InvariantCulture) : "--", "");
+            if (ShowLapsLeft) { FuelItem(dc, ix, y, LblLaps, LapsLeft > 0 ? LapsLeft.ToString("0.0", CultureInfo.InvariantCulture) : "--", ""); ix += FuelItemW(LblLaps, "00.0", ""); }
+            if (ShowRaceFuel) FuelItem(dc, ix, y, LblRace, RaceFuel > 0 ? RaceFuel.ToString("0.0", CultureInfo.InvariantCulture) : "--", "L");
         }
 
         // ---- lock / unlock button, shown while the mouse is over the HUD ----------------
