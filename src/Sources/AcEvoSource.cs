@@ -143,7 +143,7 @@ namespace SimracingBR
             t.ClearExtras();
             FillTyres(t, pb);
             t.LapCount = BitConverter.ToInt32(gb, G_LAPCOUNT);
-            t.Position = Pos((int)BitConverter.ToUInt32(gb, G_POS), t.Drivers);
+            t.Position = Pos((int)BitConverter.ToUInt32(gb, G_POS) + 1, t.Drivers);   // currentPos is 0-based (leader = 0)
             float fpct = BitConverter.ToSingle(gb, G_FUELPCT);
             t.FuelCap = (fpct > 0.01f && fpct <= 1.001f && t.Fuel > 0) ? t.Fuel / fpct : 0;
             t.SessionIsRace = Str(Pages[2], 36, 24, false) == "Race";     // solo only: online it keeps the name of the session joined (seen "Qualifying" all race)
