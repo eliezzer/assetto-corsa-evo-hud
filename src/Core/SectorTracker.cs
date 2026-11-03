@@ -37,6 +37,8 @@ namespace SimracingBR
         public bool AssumePurple;              // setting: paint your best purple even when the game says nothing about the other drivers
         bool alone = true;                     // you are the only driver in the session (or the game does not say)
         int[] othersSec = new int[Main];       // best main-sector times of all drivers (ms, 0 = the game doesn't say)
+        double[] othersSeg, othersEst;         // best times of the other drivers timed by us (sub-sectors / main sectors, NaN = none yet)
+        bool tracking;                         // the game says where the other cars are, so they are timed here too
         double[] secT, secBest;                // what each main sector was scored with (to score it again)
         int wrapTick; bool pendingClear;       // crossing of the finish line: colors go back to gray after HoldMs
         public int HoldMs = 2500;
@@ -72,6 +74,7 @@ namespace SimracingBR
             refCross = Fill(n + 1); Ahead = false; secT = Fill(Main); secBest = Fill(Main);
             bestSeg = Fill(n); bestSec = Fill(Main); refTotal = Nan;
             cross = Fill(n + 1);
+            othersSeg = Fill(n); othersEst = Fill(Main); rivals = new Rival[0];
             bound = new double[n + 1];
             Bounds();
             clean = false; nextIdx = Math.Max(1, IndexAfter((float)Math.Max(0, prevPos)));
@@ -106,6 +109,9 @@ namespace SimracingBR
             for (int i = 0; i < Count; i++) { Seg[i] = SegState.None; SegMs[i] = Nan; bestSeg[i] = Nan; }
             for (int m = 0; m < Main; m++) { Sec[m] = SegState.None; SecMs[m] = Nan; secT[m] = Nan; bestSec[m] = Nan; }
             refTotal = Nan; OwnBestMs = 0; OwnLastMs = 0; Ahead = false;
+            for (int i = 0; i < Count; i++) othersSeg[i] = Nan;
+            for (int m = 0; m < Main; m++) othersEst[m] = Nan;
+            rivals = new Rival[0];
             for (int i = 0; i <= Count; i++) refCross[i] = Nan;
             clean = false;
         }
@@ -132,7 +138,8 @@ namespace SimracingBR
 
             float pos = t.TrackPos;
             for (int m = 0; m < Main; m++) othersSec[m] = t.SessionBestSecMs[m];
-            alone = t.Drivers <= 1 || AssumePurple;   // unknown counts as alone
+            tracking = t.CarSlots > 1;
+            alone = t.Drivers <= 1 || AssumePurple || tracking;   // unknown counts as alone; when the others are timed here, no time of theirs = nobody did better
             if (!t.LapValid) lapValid = false;
             if (t.InPitLane) Unclean("pit lane");
 
@@ -182,6 +189,7 @@ namespace SimracingBR
                 }
             }
             prevPos = pos; prevMs = ms;
+            if (tracking) UpdateRivals(t, ms);
 
             CurSeg = Math.Max(0, Math.Min(Count - 1, IndexAfter(pos) - 1));
             CurSec = CurSeg / Subs;
@@ -285,7 +293,7 @@ namespace SimracingBR
             if (double.IsNaN(a) || double.IsNaN(b) || b <= a) return;
             int now = Environment.TickCount;
             Record(ref bestSeg[i], b - a);
-            SegMs[i] = b - a; Seg[i] = Classify(b - a, bestSeg[i], 0, alone); SegStamp[i] = now;
+            SegMs[i] = b - a; Seg[i] = Classify(b - a, bestSeg[i], Ms(othersSeg[i]), alone); SegStamp[i] = now;
             if ((i + 1) % Subs == 0)
             {
                 int m = i / Subs;
@@ -293,7 +301,7 @@ namespace SimracingBR
                 if (secBad || double.IsNaN(s0) || b <= s0) return;
                 Record(ref bestSec[m], b - s0);
                 secT[m] = b - s0; secBest[m] = bestSec[m];
-                SecMs[m] = secT[m]; Sec[m] = Classify(secT[m], secBest[m], othersSec[m], alone); SecStamp[m] = now;
+                SecMs[m] = secT[m]; Sec[m] = Classify(secT[m], secBest[m], OthersSec(m), alone); SecStamp[m] = now;
             }
         }
 
@@ -303,13 +311,110 @@ namespace SimracingBR
         void Rescore()
         {
             for (int m = 0; m < Main; m++)
-                if (!double.IsNaN(secT[m]) && Sec[m] != SegState.None) Sec[m] = Classify(secT[m], secBest[m], othersSec[m], alone);
+                if (!double.IsNaN(secT[m]) && Sec[m] != SegState.None) Sec[m] = Classify(secT[m], secBest[m], OthersSec(m), alone);
+            for (int i = 0; i < Count; i++)
+                if (Seg[i] == SegState.Purple && !double.IsNaN(SegMs[i])) Seg[i] = Classify(SegMs[i], SegMs[i], Ms(othersSeg[i]), alone);
             if (pendingClear && (CurSeg >= 1 || Environment.TickCount - wrapTick >= HoldMs))
             {
                 pendingClear = false;
                 for (int i = 0; i < Count; i++) if (SegStamp[i] - wrapTick <= 0) { Seg[i] = SegState.None; SegMs[i] = Nan; }
                 for (int m = 0; m < Main; m++) if (SecStamp[m] - wrapTick <= 0) { Sec[m] = SegState.None; SecMs[m] = Nan; secT[m] = Nan; }
             }
+        }
+
+        static int Ms(double v) { return double.IsNaN(v) ? 0 : Math.Max(1, (int)Math.Round(v)); }
+
+        // fastest time of the other drivers in main sector m: the game's or ours (ms, 0 = none)
+        int OthersSec(int m)
+        {
+            int g = othersSec[m], e = Ms(othersEst[m]);
+            return g > 0 && e > 0 ? Math.Min(g, e) : Math.Max(g, e);
+        }
+
+        // ---- the other drivers (games that only say where their cars are) --------------------------
+        // Every other car is timed the same way as the player, through the same boundaries, from its lap position (see
+        // TrackLine). A stretch only counts when the car was seen on the line all the way through it: pit lane, off track,
+        // jumps and lost tracking drop it. The game doesn't say whether their laps are valid, so a cut can give them a time.
+        class Rival
+        {
+            public double Prev = -1, PrevMs;
+            public int Next;
+            public bool SegOk, SecBad, LapOk;
+            public double[] Cross;
+        }
+        Rival[] rivals;
+        public Action<int, string, double> RivalTimed;     // slot, "s<i>" sub-sector / "S<m>" main sector / "L" lap, ms (for --cars)
+
+        void UpdateRivals(Tele t, double ms)
+        {
+            int n = Math.Min(t.CarSlots, t.CarPos.Length);
+            if (rivals.Length < n) Array.Resize(ref rivals, n);
+            for (int k = 1; k < n; k++)
+            {
+                var r = rivals[k] ?? (rivals[k] = new Rival { Cross = Fill(Count + 1) });
+                double p = t.CarPos[k];
+                if (p < 0) { r.Prev = -1; continue; }
+                if (p == r.Prev) continue;                                   // no new position from the network yet
+                bool wrap = r.Prev > 0.85 && p < 0.15;
+                double q = wrap ? p + 1 : p;
+                if (r.Prev < 0 || ms - r.PrevMs > 1000 || q < r.Prev - 0.02 || q > r.Prev + 0.2)
+                {
+                    // (re)found: time from the next boundary on
+                    for (int i = 0; i <= Count; i++) r.Cross[i] = Nan;
+                    r.Next = IndexAfter((float)p); r.SegOk = false; r.SecBad = true; r.LapOk = false;
+                }
+                else if (q < r.Prev) continue;                                // small backwards jitter
+                else
+                {
+                    double a = r.Prev;
+                    while (true)
+                    {
+                        if (r.Next > Count) { NewRivalLap(r); a -= 1; q -= 1; continue; }
+                        double b = bound[r.Next];
+                        if (q < b) break;
+                        double f = q > a ? Math.Max(0, Math.Min(1, (b - a) / (q - a))) : 1;
+                        RivalCross(k, r, r.PrevMs + f * (ms - r.PrevMs));
+                    }
+                }
+                r.Prev = p; r.PrevMs = ms;
+            }
+        }
+
+        void NewRivalLap(Rival r)
+        {
+            double c = r.Cross[Count];
+            for (int i = 0; i <= Count; i++) r.Cross[i] = Nan;
+            r.Cross[0] = c; r.Next = 1; r.LapOk = !double.IsNaN(c);
+        }
+
+        // car k crossed boundary r.Next at clock time tc
+        void RivalCross(int k, Rival r, double tc)
+        {
+            int c = r.Next;
+            r.Cross[c] = tc;
+            if (!r.SegOk) { r.SecBad = true; r.LapOk = false; }
+            else
+            {
+                double a = r.Cross[c - 1];
+                if (!double.IsNaN(a) && tc > a)
+                {
+                    Record(ref othersSeg[c - 1], tc - a);
+                    if (RivalTimed != null) RivalTimed(k, "s" + (c - 1), tc - a);
+                }
+                if (c % Subs == 0 && !r.SecBad)
+                {
+                    double s0 = r.Cross[c - Subs];
+                    if (!double.IsNaN(s0) && tc > s0)
+                    {
+                        Record(ref othersEst[c / Subs - 1], tc - s0);
+                        if (RivalTimed != null) RivalTimed(k, "S" + (c / Subs - 1), tc - s0);
+                    }
+                }
+                if (c == Count && r.LapOk && !double.IsNaN(r.Cross[0]) && RivalTimed != null) RivalTimed(k, "L", tc - r.Cross[0]);
+            }
+            if (c % Subs == 0) r.SecBad = false;
+            r.SegOk = true;
+            r.Next++;
         }
 
         // a whole lap was timed: it becomes the best lap if it is the fastest (used for the "ahead of the best lap" color of the lap time)
