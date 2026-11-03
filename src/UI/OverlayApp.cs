@@ -302,6 +302,7 @@ namespace SimracingBR
             AddCheck(root, L.T("Fuel in the tank", "Combustível no tanque"), "ShowFuel", () => v.ShowFuel, x => v.ShowFuel = x, after);
             AddCheck(root, L.T("Consumption per lap", "Consumo por volta"), "ShowFuelPerLap", () => v.ShowFuelPerLap, x => v.ShowFuelPerLap = x, after);
             AddCheck(root, L.T("Laps remaining", "Voltas restantes"), "ShowLapsLeft", () => v.ShowLapsLeft, x => v.ShowLapsLeft = x, after);
+            AddCheck(root, L.T("Suggested race fuel", "Combustível sugerido para a corrida"), "ShowRaceFuel", () => v.ShowRaceFuel, x => v.ShowRaceFuel = x, after);
 
             AddAppearance(root, pedals, L.T("Overall transparency (lower = more see-through)", "Transparência geral (menor = mais transparente)"));
             AddSlider(root, L.T("Background transparency (lower = more see-through)", "Transparência do fundo (menor = mais transparente)"), 0, 100, 5,
@@ -659,7 +660,7 @@ namespace SimracingBR
                 }
                 if (games.Active != lastSource) SourceChanged(games.Active);
             }
-            pedals.Tick(t, preview || t.HasTcCut);
+            pedals.Tick(t, preview || t.HasTcCut, fuel.RaceFuel);
             sectors.Tick(t, preview);
             fuel.Tick(t);
             elec.Tick(t);

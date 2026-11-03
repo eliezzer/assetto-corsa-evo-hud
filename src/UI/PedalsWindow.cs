@@ -10,7 +10,7 @@ namespace SimracingBR
     public class PedalsWindow : OverlayWindow
     {
         public static readonly string[] FlagKeys = { "ShowGraph", "ShowBars", "ShowClutch", "ShowAids", "ShowGear", "ShowSpeed",
-            "ShowShiftLights", "ShowWheel", "ShowFuel", "ShowFuelPerLap", "ShowLapsLeft", "ShowBias" };
+            "ShowShiftLights", "ShowWheel", "ShowFuel", "ShowFuelPerLap", "ShowLapsLeft", "ShowRaceFuel", "ShowBias" };
 
         public readonly HudView View;
         // fuel-per-lap fallback for games that don't publish it
@@ -54,7 +54,7 @@ namespace SimracingBR
             View.ShowGear = cfg.Bool("ShowGear", true); View.ShowSpeed = cfg.Bool("ShowSpeed", true);
             View.ShowShiftLights = cfg.Bool("ShowShiftLights", true); View.ShowWheel = cfg.Bool("ShowWheel", true);
             View.ShowFuel = cfg.Bool("ShowFuel", true); View.ShowFuelPerLap = cfg.Bool("ShowFuelPerLap", true);
-            View.ShowLapsLeft = cfg.Bool("ShowLapsLeft", true);
+            View.ShowLapsLeft = cfg.Bool("ShowLapsLeft", true); View.ShowRaceFuel = cfg.Bool("ShowRaceFuel", true);
             View.Relayout();
         }
 
@@ -77,8 +77,9 @@ namespace SimracingBR
         }
 
         // ---- per frame --------------------------------------------------------------------
-        public void Tick(Tele t, bool tcc)
+        public void Tick(Tele t, bool tcc, double raceFuel)
         {
+            View.RaceFuel = raceFuel;             // from the fuel overlay's model, so both show the same suggestion
             bool bias = t.BrakeBias > 0.2f;
             if (tcc != View.HasTcc || bias != View.HasBias) { View.HasTcc = tcc; View.HasBias = bias; LayoutChanged(); }
             UpdateFuel(t);
