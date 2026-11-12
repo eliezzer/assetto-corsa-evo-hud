@@ -44,7 +44,7 @@ namespace SimracingBR
         public bool ShowFfb = true, ShowBaseTemp = true;
         public bool HasFfb, HasBase;             // the game publishes its FFB output / Pit House is logging the base temperatures
         public double FfbLevel;                  // 0..1 (1 = full scale, clipping at the top)
-        public bool Clipping;                    // clipping now (held a moment so a short clip is seen)
+        public bool Clipping;                    // clipped within the last moment: lights the cap, so a short clip is seen
         public double MotorTemp = -1;            // degrees C, -1 = unknown
         bool FfbOn { get { return ShowFfb && HasFfb; } }
         bool TempOn { get { return ShowBaseTemp && HasBase; } }
@@ -356,10 +356,12 @@ namespace SimracingBR
         {
             dc.DrawRoundedRectangle(Br(255, 30, 30, 38), null, new Rect(x, y, 16, h), 2, 2);
             double fh = Math.Max(0, Math.Min(1, FfbLevel)) * h;
-            Color c = Clipping ? CClip : (FfbLevel >= 0.9 ? Mix(CFfb, CClip, (FfbLevel - 0.9) / 0.1 * 0.6) : CFfb);
+            // the bar follows the signal: red only while it is at full scale now, warming up from 90%
+            Color c = FfbLevel >= 0.985 ? CClip : (FfbLevel >= 0.9 ? Mix(CFfb, CClip, (FfbLevel - 0.9) / 0.085 * 0.6) : CFfb);
             if (fh > 0) dc.DrawRoundedRectangle(Br(c), null, new Rect(x, y + h - fh, 16, fh), 2, 2);
-            // the top 2% is the clipping zone: a thin line marks it, it lights up while clipping
-            dc.DrawRectangle(Clipping ? Br(CClip) : Br(90, 255, 255, 255), null, new Rect(x, y, 16, 3));
+            // the cap marks full scale; it stays lit a moment after a clip (the bar itself may already be low)
+            if (Clipping) dc.DrawRoundedRectangle(Br(CClip), null, new Rect(x - 1, y - 1, 18, 6), 1.5, 1.5);
+            else dc.DrawRectangle(Br(90, 255, 255, 255), null, new Rect(x, y, 16, 3));
         }
 
         const double CAP = 0.70;                 // digit height / font size (Bahnschrift)
