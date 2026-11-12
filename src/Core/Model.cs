@@ -64,6 +64,11 @@ namespace SimracingBR
         public float[] TyreTemp = { -1, -1, -1, -1 };     // core temperature of each tyre in degrees C, -1 = unknown
         public float[] TyreColdPsi = { -1, -1, -1, -1 };  // the cold / setup pressure when the game publishes it, -1 = unknown
 
+        // force feedback
+        public float FfbOut = float.NaN;           // the game's FFB output, signed, 1 = full scale (clipping above); NaN = not published
+        // MOZA wheelbase temperatures in degrees C from the MOZA Pit House log (see WheelBaseSource.cs), -1 = unknown
+        public float BaseMotorC = -1, BaseMosfetC = -1, BaseControllerC = -1;
+
         // forget the optional fuel / electronics values of the previous game or car
         public void ClearExtras()
         {

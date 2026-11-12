@@ -72,7 +72,8 @@ namespace SimracingBR
     {
         public const int PACKET = 0, GAS = 4, BRAKE = 8, FUEL = 12, GEAR = 16, RPM = 20, STEER = 24, SPEED = 28,
                          TC = 204, ABS = 252, AUTOSHIFT = 264, CLUTCH = 364, MAXRPM = 588, TCACT = 672, ABSACT = 676,
-                         PRESSURE = 88, CORETEMP = 152;   // wheelsPressure[4] (psi), tyreCoreTemperature[4] (C)
+                         PRESSURE = 88, CORETEMP = 152,   // wheelsPressure[4] (psi), tyreCoreTemperature[4] (C)
+                         FINALFF = 308;                    // finalFF: the force feedback the game sends, 1 = full scale
         public const int LEN = 800;
     }
 
@@ -128,6 +129,8 @@ namespace SimracingBR
             t.AbsOn = BitConverter.ToInt32(pb, AcPhys.ABSACT) != 0 || gb[G_ABSACT] != 0;
             t.TcOn = BitConverter.ToInt32(pb, AcPhys.TCACT) != 0 || gb[G_TCACT] != 0;
             t.SteerDeg = BitConverter.ToInt32(gb, G_STEERDEG);
+            float ff = BitConverter.ToSingle(pb, AcPhys.FINALFF);
+            t.FfbOut = float.IsNaN(ff) || Math.Abs(ff) > 10 ? float.NaN : ff;
             t.Fuel = BitConverter.ToSingle(gb, G_FUEL);
             t.FuelPerLap = BitConverter.ToSingle(gb, G_FUELLAP);
             t.LapMs = BitConverter.ToInt32(gb, G_LAPMS);

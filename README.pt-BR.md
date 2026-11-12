@@ -6,7 +6,7 @@ Um conjunto de overlays de telemetria para simuladores de corrida, desenhados so
 
 | Overlay | O que mostra | Padrão |
 |---|---|---|
-| **Pedais** | Gráfico e barras dos pedais (embreagem, freio, acelerador) que mudam de cor quando ABS/TC atuam, níveis de ABS / TC / TCC, balança de freio, marcha, velocidade, luzes de troca, um volante que gira e a linha de combustível | ligado |
+| **Pedais** | Gráfico e barras dos pedais (embreagem, freio, acelerador) que mudam de cor quando ABS/TC atuam, níveis de ABS / TC / TCC, balança de freio, marcha, velocidade, luzes de troca, um volante que gira, a linha de combustível, **barra de force feedback que fica vermelha no clip** e temperatura da base MOZA | ligado |
 | **Setores** (BETA) | Volta atual / melhor / última, a melhor volta do líder, sua posição e volta, e S1 / S2 / S3 divididos em subsetores pintados de roxo / verde / cinza, como o app CMRT do Assetto Corsa 1 | ligado |
 | **Combustível** (BETA) | Combustível no tanque, consumo por volta, voltas restantes e o **combustível sugerido para a corrida inteira** | desligado |
 | **Eletrônica** | Chips de ABS / TC / TCC / ESC, balança de freio, mapa do motor, diferencial, bateria do híbrido, energia virtual, DRS | desligado |
@@ -29,9 +29,9 @@ O app descobre sozinho qual jogo está aberto. Não precisa de SimHub nem de ins
 Uma versão pronta para rodar no Windows (não precisa instalar nada: só do .NET Framework que já vem no Windows). Baixe o zip de uma release, extraia e rode `SimracingBR.exe`, mantendo a pasta `assets` ao lado dele.
 
 - [Releases do SimracingBR-overlay](https://github.com/eliezzer/SimracingBR-overlay/releases) (v0.2.0)
-- [Releases do assetto-corsa-evo-hud](https://github.com/eliezzer/assetto-corsa-evo-hud/releases) (v2.2.0, a mais nova: duração da corrida em destaque no combustível, posição e volta no overlay de setores)
+- [Releases do assetto-corsa-evo-hud](https://github.com/eliezzer/assetto-corsa-evo-hud/releases) (v2.3.0, a mais nova: barra de clip do force feedback e temperatura da base MOZA no overlay de pedais, ícone novo)
 
-O SimracingBR-overlay v0.2.0 é o mesmo programa do assetto-corsa-evo-hud v2.0.0; da v2.1.0 em diante, por enquanto, só existem aqui. A versão que o programa mostra na dica do ícone da bandeja é a dele (0.4.0 na v2.2.0). O programa não é assinado, então o Windows pode mostrar um aviso do SmartScreen na primeira vez: escolha *Mais informações* → *Executar assim mesmo*. Você também pode compilar você mesmo, veja [Compilar](#compilar).
+O SimracingBR-overlay v0.2.0 é o mesmo programa do assetto-corsa-evo-hud v2.0.0; da v2.1.0 em diante, por enquanto, só existem aqui. A versão que o programa mostra na dica do ícone da bandeja é a dele (0.5.0 na v2.3.0). O programa não é assinado, então o Windows pode mostrar um aviso do SmartScreen na primeira vez: escolha *Mais informações* → *Executar assim mesmo*. Você também pode compilar você mesmo, veja [Compilar](#compilar).
 
 ## Configuração de cada jogo
 
@@ -42,7 +42,7 @@ O SimracingBR-overlay v0.2.0 é o mesmo programa do assetto-corsa-evo-hud v2.0.0
 ## Usar
 
 1. Rode `SimracingBR.exe` (a pasta `assets` precisa estar ao lado dele).
-2. Ícone "S" verde e amarelo na bandeja do sistema (perto do relógio). Clique com o botão direito:
+2. O ícone do programa (um volante com uma faixa verde) aparece na bandeja do sistema (perto do relógio). Clique com o botão direito:
    - **Configurações...**: um menu lateral com uma entrada por overlay e um botão liga/desliga à direita dele. Clique no nome para ver as configurações daquele overlay ao lado; o de pedais já vem selecionado. As mudanças valem na hora e os overlays mostram dados de demonstração enquanto a janela estiver aberta.
    - **Destravar / Travar posição**: destrava para arrastar os overlays (também `Ctrl+Shift+L` ou duplo clique no ícone). Também dá para passar o mouse sobre um overlay e clicar no botão **DESTRAVAR** / **TRAVAR** no canto superior direito dele.
    - **Overlays**, **Tamanho**, **Restaurar posições**, **Modo demonstração**, **Esconder quando não está pilotando**, **Sair**.
@@ -53,6 +53,11 @@ Cada overlay tem a sua posição, tamanho e transparência. BETA quer dizer que 
 ## Overlay de pedais
 
 Gráfico e barras dos pedais, chips de ABS / TC / TCC (acendem enquanto o auxílio atua), um chip **BB** com a balança de freio, marcha, velocidade, luzes de troca, volante e a linha de combustível. Em Configurações escolha o que aparece, o tamanho, a transparência geral e a do fundo (o fundo pode ficar quase invisível com os pedais sólidos). O chip **TCC** só aparece nos jogos e carros que têm esse ajuste, e o **BB** só quando o jogo publica a balança de freio.
+
+**Base do volante** (Configurações > BASE DO VOLANTE):
+
+- **Barra de force feedback**, ao lado das barras dos pedais: quanto da faixa do volante o force feedback do jogo está usando, lido 60 vezes por segundo. Fica **vermelha, com a ponta acesa, quando o sinal clipa** (chega no máximo), e segura o vermelho por 0,6 s para um clip curto ser visto. O AC EVO e o ACC publicam esse sinal (`finalFF`); nos outros jogos a barra não aparece.
+- **TEMP. BASE**: a temperatura do motor de uma base **MOZA**, na linha de combustível. O MOZA Pit House fica com a porta serial da base, então o overlay lê o log que o Pit House grava a cada 30 s enquanto está aberto (`%LOCALAPPDATA%\MOZA Pit House\Motor_Temprature_Log.log`: controlador, MOSFET e estator do motor). Só aparece com o Pit House aberto e gravando (registro com menos de 2 minutos). Nada a instalar e nada é enviado para a base.
 
 ## Overlay de setores (BETA)
 
@@ -99,6 +104,7 @@ Chips de ABS / TC / TCC / ESC que acendem enquanto o auxílio atua, mais balanç
 | TCC, nível de ESC | ✓ | TCC | – | TCC quando o carro tem |
 | ABS atuando / TC atuando | ✓ / ✓ | ✓ / ✓ | ✓ / – | ✓ / ✓ |
 | Balança de freio | ✓ | ✓ | ✓ | ✓ |
+| Saída do force feedback (clip) | ✓ | ✓ | – | – |
 | Mapa do motor | – | ✓ | – | ✓ |
 | Diferencial | ✓ | – | – | – |
 | Bateria / energia virtual | bateria (se o carro tem KERS) | – | – | ✓ / ✓ |
@@ -140,7 +146,7 @@ O AC EVO publica os dados do jogador na memória compartilhada, mas nada sobre o
 | `ColorAbs` / `ColorTc` | laranja / amarelo | Cor quando ABS/TC atuam |
 | `ColorShiftA` / `ColorShiftB` | vermelho / apagado | Pisca de troca de marcha |
 | `ColorStripe` | `#E10600` (vermelho) | Faixa à esquerda de todos os overlays (também em **Configurações** > Aparência) |
-| `ShowGraph`, `ShowBars`, `ShowClutch`, `ShowAids`, `ShowBias`, `ShowGear`, `ShowSpeed`, `ShowShiftLights`, `ShowWheel`, `ShowFuel`, `ShowFuelPerLap`, `ShowLapsLeft` | `1` | Mostra ou esconde cada parte do overlay de pedais |
+| `ShowGraph`, `ShowBars`, `ShowClutch`, `ShowAids`, `ShowBias`, `ShowGear`, `ShowSpeed`, `ShowShiftLights`, `ShowWheel`, `ShowFuel`, `ShowFuelPerLap`, `ShowLapsLeft`, `ShowRaceFuel`, `ShowFfb`, `ShowBaseTemp` | `1` | Mostra ou esconde cada parte do overlay de pedais |
 | `AidColors` | `1` | Recolore os pedais enquanto ABS / TC atuam |
 | `AutoHide`, `HideInPitBox`, `HideWhenGameNotFocused` | `1` | Regras de esconder dos overlays de pista |
 | `SectorsSubs` | `8` | Subsetores por setor, de 1 a 12 |
@@ -161,7 +167,7 @@ O arquivo também guarda o que o app aprende: `FuelBest_*` e `FuelPer_*` (volta 
 powershell -ExecutionPolicy Bypass -File build.ps1
 ```
 
-Gera `dist\SimracingBR.exe` (+ `dist\assets`).
+Gera `dist\SimracingBR.exe` (+ `dist\assets`), com o ícone do programa (`assets\icon.ico`) embutido. `build.ps1 -Release 2.3.0` também gera `dist\SimracingBR-v2.3.0-windows.zip`, o arquivo anexado à release no GitHub. O ícone é desenhado por `tools\make-icon.ps1`.
 
 ## Diagnóstico
 
@@ -184,6 +190,7 @@ src/Sources/AccSource.cs       Assetto Corsa Competizione
 src/Sources/Ams2Source.cs      Automobilista 2
 src/Sources/LmuSource.cs       Le Mans Ultimate
 src/Sources/GameSources.cs     detecção automática do jogo + dados de demonstração
+src/Sources/WheelBaseSource.cs temperaturas da base MOZA (do log do Pit House)
 src/UI/OverlayApp.cs           bandeja, atalhos, janela de Configurações, qual overlay aparece quando
 src/UI/OverlayWindow.cs        base de toda janela de overlay (travar, arrastar, redimensionar, clicar através)
 src/UI/Chrome.cs               visual comum dos overlays
