@@ -29,9 +29,9 @@ The app detects which game is running by itself. No SimHub and nothing to instal
 A ready-to-run build for Windows (nothing to install: it only needs the .NET Framework that ships with Windows). Download the zip from a release, extract it and run `SimracingBR.exe`, keeping the `assets` folder next to it.
 
 - [SimracingBR-overlay releases](https://github.com/eliezzer/SimracingBR-overlay/releases) (v0.2.0)
-- [assetto-corsa-evo-hud releases](https://github.com/eliezzer/assetto-corsa-evo-hud/releases) (v2.3.0, the newest: force feedback clipping bar and MOZA wheelbase temperature on the pedals overlay, new app icon)
+- [assetto-corsa-evo-hud releases](https://github.com/eliezzer/assetto-corsa-evo-hud/releases) (v2.3.1, the newest: force feedback clipping bar and MOZA wheelbase temperature on the pedals overlay, new app icon)
 
-SimracingBR-overlay v0.2.0 is the same program as assetto-corsa-evo-hud v2.0.0; v2.1.0 and later are only here for now. The version the program shows in the tray tooltip is its own (0.5.0 for v2.3.0). The program is not code-signed, so Windows may show a SmartScreen warning the first time: choose *More info* → *Run anyway*. You can also build it yourself, see [Build](#build).
+SimracingBR-overlay v0.2.0 is the same program as assetto-corsa-evo-hud v2.0.0; v2.1.0 and later are only here for now. The version the program shows in the tray tooltip is its own (0.5.1 for v2.3.1). The program is not code-signed, so Windows may show a SmartScreen warning the first time: choose *More info* → *Run anyway*. You can also build it yourself, see [Build](#build).
 
 ## Per-game setup
 
@@ -56,7 +56,7 @@ Pedal graph and bars, ABS / TC / TCC chips (they light up while the aid cuts in)
 
 **Wheelbase** (Settings > WHEELBASE):
 
-- **Force feedback bar**, next to the pedal bars: how much of the wheel's range the game's force feedback is using, read 60 times a second. It turns **red, with its top cap lit, when the signal clips** (full scale), and holds the red for 0.6 s so a short clip is still seen. AC EVO and ACC publish it (`finalFF`); other games don't show the bar.
+- **Force feedback bar**, next to the pedal bars: how much of the wheel's range the game's force feedback is using, read 60 times a second. It turns **red while the signal is at full scale** (clipping), and its **top cap stays lit for 0.6 s after a clip**, so a short clip is still seen even when the bar is already back down. AC EVO and ACC publish it (`finalFF`); other games don't show the bar.
 - **BASE TEMP**: the motor temperature of a **MOZA** wheelbase, in the fuel row. MOZA Pit House owns the base's serial port, so the overlay reads the log Pit House writes every 30 s while it runs (`%LOCALAPPDATA%\MOZA Pit House\Motor_Temprature_Log.log`: controller, MOSFET and motor stator). It only shows while Pit House is open and logging (an entry less than 2 minutes old). Nothing to install and nothing is sent to the base.
 
 ## Sectors overlay (BETA)

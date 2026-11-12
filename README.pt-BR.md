@@ -29,9 +29,9 @@ O app descobre sozinho qual jogo está aberto. Não precisa de SimHub nem de ins
 Uma versão pronta para rodar no Windows (não precisa instalar nada: só do .NET Framework que já vem no Windows). Baixe o zip de uma release, extraia e rode `SimracingBR.exe`, mantendo a pasta `assets` ao lado dele.
 
 - [Releases do SimracingBR-overlay](https://github.com/eliezzer/SimracingBR-overlay/releases) (v0.2.0)
-- [Releases do assetto-corsa-evo-hud](https://github.com/eliezzer/assetto-corsa-evo-hud/releases) (v2.3.0, a mais nova: barra de clip do force feedback e temperatura da base MOZA no overlay de pedais, ícone novo)
+- [Releases do assetto-corsa-evo-hud](https://github.com/eliezzer/assetto-corsa-evo-hud/releases) (v2.3.1, a mais nova: barra de clip do force feedback e temperatura da base MOZA no overlay de pedais, ícone novo)
 
-O SimracingBR-overlay v0.2.0 é o mesmo programa do assetto-corsa-evo-hud v2.0.0; da v2.1.0 em diante, por enquanto, só existem aqui. A versão que o programa mostra na dica do ícone da bandeja é a dele (0.5.0 na v2.3.0). O programa não é assinado, então o Windows pode mostrar um aviso do SmartScreen na primeira vez: escolha *Mais informações* → *Executar assim mesmo*. Você também pode compilar você mesmo, veja [Compilar](#compilar).
+O SimracingBR-overlay v0.2.0 é o mesmo programa do assetto-corsa-evo-hud v2.0.0; da v2.1.0 em diante, por enquanto, só existem aqui. A versão que o programa mostra na dica do ícone da bandeja é a dele (0.5.1 na v2.3.1). O programa não é assinado, então o Windows pode mostrar um aviso do SmartScreen na primeira vez: escolha *Mais informações* → *Executar assim mesmo*. Você também pode compilar você mesmo, veja [Compilar](#compilar).
 
 ## Configuração de cada jogo
 
@@ -56,7 +56,7 @@ Gráfico e barras dos pedais, chips de ABS / TC / TCC (acendem enquanto o auxíl
 
 **Base do volante** (Configurações > BASE DO VOLANTE):
 
-- **Barra de force feedback**, ao lado das barras dos pedais: quanto da faixa do volante o force feedback do jogo está usando, lido 60 vezes por segundo. Fica **vermelha, com a ponta acesa, quando o sinal clipa** (chega no máximo), e segura o vermelho por 0,6 s para um clip curto ser visto. O AC EVO e o ACC publicam esse sinal (`finalFF`); nos outros jogos a barra não aparece.
+- **Barra de force feedback**, ao lado das barras dos pedais: quanto da faixa do volante o force feedback do jogo está usando, lido 60 vezes por segundo. Fica **vermelha enquanto o sinal está no máximo** (clip), e a **ponta de cima fica acesa por 0,6 s depois de um clip**, para um clip curto ser visto mesmo com a barra já baixa. O AC EVO e o ACC publicam esse sinal (`finalFF`); nos outros jogos a barra não aparece.
 - **TEMP. BASE**: a temperatura do motor de uma base **MOZA**, na linha de combustível. O MOZA Pit House fica com a porta serial da base, então o overlay lê o log que o Pit House grava a cada 30 s enquanto está aberto (`%LOCALAPPDATA%\MOZA Pit House\Motor_Temprature_Log.log`: controlador, MOSFET e estator do motor). Só aparece com o Pit House aberto e gravando (registro com menos de 2 minutos). Nada a instalar e nada é enviado para a base.
 
 ## Overlay de setores (BETA)
