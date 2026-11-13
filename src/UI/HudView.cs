@@ -38,6 +38,17 @@ namespace SimracingBR
                     ShowFuel = true, ShowFuelPerLap = true, ShowLapsLeft = true, ShowRaceFuel = true,
                     AidColors = true, InvertSteer;
         public Color CClutch, CBrake, CThrottle, CAbs, CTc, CShiftA, CShiftB;
+        public Color CFfb = Color.FromRgb(170, 180, 200), CClip = Color.FromRgb(255, 30, 30);
+
+        // force feedback bar and MOZA wheelbase temperature (set by the window every frame)
+        public bool ShowFfb = true, ShowBaseTemp = true;
+        public bool HasFfb, HasBase;             // the game publishes its FFB output / Pit House is logging the base temperatures
+        public double FfbLevel;                  // 0..1 (1 = full scale, clipping at the top)
+        public bool Clipping;                    // clipped within the last moment: lights the cap, so a short clip is seen
+        public double MotorTemp = -1;            // degrees C, -1 = unknown
+        bool FfbOn { get { return ShowFfb && HasFfb; } }
+        bool TempOn { get { return ShowBaseTemp && HasBase; } }
+        bool AnyBars { get { return ShowBars || FfbOn; } }
         public ImageSource Wheel;
         public double BgOpacity = 1;             // panel background alpha 0..1, on top of the window opacity
 
@@ -63,19 +74,19 @@ namespace SimracingBR
         // Hidden blocks take no space; the HUD shrinks to fit.
         public void Relayout()
         {
-            nBars = ShowBars ? (ShowClutch ? 3 : 2) : 0;
+            nBars = (ShowBars ? (ShowClutch ? 3 : 2) : 0) + (FfbOn ? 1 : 0);
             double barsW = nBars > 0 ? 22 * nBars - 6 : 0;
-            bool fuelAny = ShowFuel || ShowFuelPerLap || ShowLapsLeft || ShowRaceFuel;
+            bool fuelAny = ShowFuel || ShowFuelPerLap || ShowLapsLeft || ShowRaceFuel || TempOn;
             hasGear = ShowGear || ShowSpeed || ShowShiftLights;
             rowAids = false;
             // With the graph: [graph + bars] with the fuel strip below (chips live inside the graph).
             // Without it: bars, ABS/TC/TCC chips and fuel sit side by side, so there is no wide empty strip.
             // (fuel alone next to the dash/wheel also stacks, otherwise a 28 px strip would float in a 104 px row)
-            compact = !ShowGraph && (ShowBars || ChipsOn || (fuelAny && (hasGear || ShowWheel)));
+            compact = !ShowGraph && (AnyBars || ChipsOn || (fuelAny && (hasGear || ShowWheel)));
             if (compact)
             {
                 // info column: fuel card on top, ABS / TC / TCC chips in one row below it (bigger font)
-                int nFuel = (ShowFuel ? 1 : 0) + (ShowFuelPerLap ? 1 : 0) + (ShowLapsLeft ? 1 : 0) + (ShowRaceFuel ? 1 : 0);
+                int nFuel = (ShowFuel ? 1 : 0) + (ShowFuelPerLap ? 1 : 0) + (ShowLapsLeft ? 1 : 0) + (ShowRaceFuel ? 1 : 0) + (TempOn ? 1 : 0);
                 chipsW = ChipsOn ? ChipsW() : 0;
                 fuelCardH = nFuel > 0 ? nFuel * FUEL_ROW + 12 : 0;
                 double chipsH = ChipsOn ? CHIPROW : 0;
@@ -89,14 +100,14 @@ namespace SimracingBR
             }
             else
             {
-                rowMain = ShowGraph || ShowBars;
+                rowMain = ShowGraph || AnyBars;
                 rowFuel = fuelAny;
                 rowAids = ChipsOn && ShowGraph;      // ABS / TC / TCC chips: own row below the fuel strip
                 chipsW = rowAids ? ChipsW() : 0;
-                double wMain = (ShowGraph ? 300 : 0) + (ShowGraph && ShowBars ? 10 : 0) + barsW;
-                double wFuel = rowFuel ? 20 + (ShowFuel ? FuelItemW(LblFuel, "000.0", "L") : 0) + (ShowFuelPerLap ? FuelItemW(LblPerLap, "0.00", "L") : 0) + (ShowLapsLeft ? FuelItemW(LblLaps, "00.0", "") : 0) + (ShowRaceFuel ? FuelItemW(LblRace, "000.0", "L") : 0) : 0;
+                double wMain = (ShowGraph ? 300 : 0) + (ShowGraph && AnyBars ? 10 : 0) + barsW;
+                double wFuel = rowFuel ? 20 + (ShowFuel ? FuelItemW(LblFuel, "000.0", "L") : 0) + (ShowFuelPerLap ? FuelItemW(LblPerLap, "0.00", "L") : 0) + (ShowLapsLeft ? FuelItemW(LblLaps, "00.0", "") : 0) + (ShowRaceFuel ? FuelItemW(LblRace, "000.0", "L") : 0) + (TempOn ? FuelItemW(LblTemp, "000", "°C") : 0) : 0;
                 colW = Math.Max(wMain, Math.Max(wFuel, chipsW));
-                graphW = ShowGraph ? colW - (ShowBars ? barsW + 10 : 0) : 0;   // graph absorbs any extra width
+                graphW = ShowGraph ? colW - (AnyBars ? barsW + 10 : 0) : 0;   // graph absorbs any extra width
             }
 
             int rows = (rowAids ? 1 : 0) + (rowMain ? 1 : 0) + (rowFuel ? 1 : 0);
@@ -206,7 +217,7 @@ namespace SimracingBR
                 if (rowMain)
                 {
                     if (ShowGraph) DrawGraph(dc, colX, y, graphW, ROW);
-                    if (ShowBars) DrawBars(dc, colX + (ShowGraph ? graphW + 10 : 0), y, ROW);
+                    if (AnyBars) DrawBars(dc, colX + (ShowGraph ? graphW + 10 : 0), y, ROW);
                     y += ROW + VGAP;
                 }
                 if (rowFuel) { DrawFuel(dc, colX, y, colW); y += STRIP + VGAP; }
@@ -245,7 +256,8 @@ namespace SimracingBR
                 if (ShowFuel) { FuelRow(dc, x, ry, infoW, LblFuel, T.Fuel > 0 ? T.Fuel.ToString("0.0", CultureInfo.InvariantCulture) : "--", "L"); ry += FUEL_ROW; }
                 if (ShowFuelPerLap) { FuelRow(dc, x, ry, infoW, LblPerLap, PerLap > 0 ? PerLap.ToString("0.00", CultureInfo.InvariantCulture) : "--", "L"); ry += FUEL_ROW; }
                 if (ShowLapsLeft) { FuelRow(dc, x, ry, infoW, LblLaps, LapsLeft > 0 ? LapsLeft.ToString("0.0", CultureInfo.InvariantCulture) : "--", ""); ry += FUEL_ROW; }
-                if (ShowRaceFuel) FuelRow(dc, x, ry, infoW, LblRace, RaceFuel > 0 ? RaceFuel.ToString("0.0", CultureInfo.InvariantCulture) : "--", "L");
+                if (ShowRaceFuel) { FuelRow(dc, x, ry, infoW, LblRace, RaceFuel > 0 ? RaceFuel.ToString("0.0", CultureInfo.InvariantCulture) : "--", "L"); ry += FUEL_ROW; }
+                if (TempOn) FuelRow(dc, x, ry, infoW, LblTemp, TempText, "°C");
                 iy += fuelCardH + 6;
             }
             if (ChipsOn) DrawAidsRow(dc, x, iy, infoW);
@@ -306,6 +318,8 @@ namespace SimracingBR
         static string LblPerLap { get { return L.T("FUEL / LAP", "CONSUMO / VOLTA"); } }
         static string LblLaps { get { return L.T("LAPS LEFT", "VOLTAS RESTANTES"); } }
         static string LblRace { get { return L.T("RACE FUEL", "SUGERIDO"); } }
+        static string LblTemp { get { return L.T("BASE TEMP", "TEMP. BASE"); } }
+        string TempText { get { return MotorTemp > 0 ? MotorTemp.ToString("0", CultureInfo.InvariantCulture) : "--"; } }
 
         // width of one item of the fuel strip: label, widest value, unit and a gap before the next item
         double FuelItemW(string label, string sample, string unit)
@@ -321,15 +335,33 @@ namespace SimracingBR
             if (ShowFuelPerLap) w = Math.Max(w, TextWidth(LblPerLap, FL, true) + TextWidth("0.00", FV, true) + TextWidth("L", FU, false) + 3);
             if (ShowLapsLeft) w = Math.Max(w, TextWidth(LblLaps, FL, true) + TextWidth("00.0", FV, true));
             if (ShowRaceFuel) w = Math.Max(w, TextWidth(LblRace, FL, true) + TextWidth("000.0", FV, true) + TextWidth("L", FU, false) + 3);
+            if (TempOn) w = Math.Max(w, TextWidth(LblTemp, FL, true) + TextWidth("000", FV, true) + TextWidth("°C", FU, false) + 3);
             return w + 32;
         }
 
         void DrawBars(DrawingContext dc, double bx, double by, double bh)
         {
             double x = bx;
-            if (ShowClutch) { Pedal(dc, x, by, bh, T.Clutch, CClutch, false); x += 22; }
-            Pedal(dc, x, by, bh, T.Brake, CBrake, T.AbsOn); x += 22;
-            Pedal(dc, x, by, bh, T.Gas, CThrottle, T.TcOn);
+            if (ShowBars)
+            {
+                if (ShowClutch) { Pedal(dc, x, by, bh, T.Clutch, CClutch, false); x += 22; }
+                Pedal(dc, x, by, bh, T.Brake, CBrake, T.AbsOn); x += 22;
+                Pedal(dc, x, by, bh, T.Gas, CThrottle, T.TcOn); x += 22;
+            }
+            if (FfbOn) FfbBar(dc, x, by, bh);
+        }
+
+        // force feedback bar: how much of the wheel's range the game is using; red (with a lit cap) when clipping
+        void FfbBar(DrawingContext dc, double x, double y, double h)
+        {
+            dc.DrawRoundedRectangle(Br(255, 30, 30, 38), null, new Rect(x, y, 16, h), 2, 2);
+            double fh = Math.Max(0, Math.Min(1, FfbLevel)) * h;
+            // the bar follows the signal: red only while it is at full scale now, warming up from 90%
+            Color c = FfbLevel >= 0.985 ? CClip : (FfbLevel >= 0.9 ? Mix(CFfb, CClip, (FfbLevel - 0.9) / 0.085 * 0.6) : CFfb);
+            if (fh > 0) dc.DrawRoundedRectangle(Br(c), null, new Rect(x, y + h - fh, 16, fh), 2, 2);
+            // the cap marks full scale; it stays lit a moment after a clip (the bar itself may already be low)
+            if (Clipping) dc.DrawRoundedRectangle(Br(CClip), null, new Rect(x - 1, y - 1, 18, 6), 1.5, 1.5);
+            else dc.DrawRectangle(Br(90, 255, 255, 255), null, new Rect(x, y, 16, 3));
         }
 
         const double CAP = 0.70;                 // digit height / font size (Bahnschrift)
@@ -410,7 +442,8 @@ namespace SimracingBR
             if (ShowFuel) { FuelItem(dc, ix, y, LblFuel, T.Fuel > 0 ? T.Fuel.ToString("0.0", CultureInfo.InvariantCulture) : "--", "L"); ix += FuelItemW(LblFuel, "000.0", "L"); }
             if (ShowFuelPerLap) { FuelItem(dc, ix, y, LblPerLap, PerLap > 0 ? PerLap.ToString("0.00", CultureInfo.InvariantCulture) : "--", "L"); ix += FuelItemW(LblPerLap, "0.00", "L"); }
             if (ShowLapsLeft) { FuelItem(dc, ix, y, LblLaps, LapsLeft > 0 ? LapsLeft.ToString("0.0", CultureInfo.InvariantCulture) : "--", ""); ix += FuelItemW(LblLaps, "00.0", ""); }
-            if (ShowRaceFuel) FuelItem(dc, ix, y, LblRace, RaceFuel > 0 ? RaceFuel.ToString("0.0", CultureInfo.InvariantCulture) : "--", "L");
+            if (ShowRaceFuel) { FuelItem(dc, ix, y, LblRace, RaceFuel > 0 ? RaceFuel.ToString("0.0", CultureInfo.InvariantCulture) : "--", "L"); ix += FuelItemW(LblRace, "000.0", "L"); }
+            if (TempOn) FuelItem(dc, ix, y, LblTemp, TempText, "°C");
         }
 
         // ---- lock / unlock button, shown while the mouse is over the HUD ----------------

@@ -25,6 +25,7 @@ namespace SimracingBR
         // its shared memory at most once a second, so this is cheap).
         public bool Read(Tele t)
         {
+            t.FfbOut = float.NaN;                     // only the games that publish it (AC EVO, ACC) set it back
             if (active != null && active.Read(t) && t.Live) return true;
             foreach (ITelemetrySource s in all)
             {
@@ -109,6 +110,10 @@ namespace SimracingBR
             t.LapMs = (int)(lap * 1000);
             t.TcLevel = 3; t.TcCutLevel = 2; t.AbsLevel = 4; t.HasTcCut = true;
             t.ShiftUp = t.Rpm >= t.MaxRpm * 0.95;
+            // force feedback / wheelbase demo: loads up in the corners, clips briefly at the peaks, warm motor
+            double ff = 0.8 * Math.Sin(ph * 0.7) + 0.3 * Math.Sin(ph * 2.3);
+            t.FfbOut = (float)Math.Max(-1.15, Math.Min(1.15, ff));
+            t.BaseMotorC = (float)(38 + 8 * warm); t.BaseMosfetC = (float)(36 + 5 * warm); t.BaseControllerC = (float)(40 + 3 * warm);
             t.Status = 2; t.InPitBox = false;
         }
     }

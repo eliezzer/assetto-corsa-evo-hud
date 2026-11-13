@@ -108,6 +108,8 @@ namespace SimracingBR
             if (t.MaxRpm <= 0) t.MaxRpm = BitConverter.ToInt32(sb, S_MAXRPM);
             t.SpeedKmh = BitConverter.ToSingle(pb, AcPhys.SPEED);
             t.SteerDeg = (float)(BitConverter.ToSingle(pb, AcPhys.STEER) * steerLock / 2);
+            float ff = BitConverter.ToSingle(pb, AcPhys.FINALFF);
+            t.FfbOut = float.IsNaN(ff) || Math.Abs(ff) > 10 ? float.NaN : ff;
             t.AbsOn = BitConverter.ToInt32(pb, AcPhys.ABSACT) != 0;
             t.TcOn = BitConverter.ToInt32(pb, AcPhys.TCACT) != 0;
             t.Fuel = BitConverter.ToSingle(pb, AcPhys.FUEL);

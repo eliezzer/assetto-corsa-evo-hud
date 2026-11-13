@@ -22,12 +22,13 @@ namespace SimracingBR
         [DllImport("user32.dll")] static extern IntPtr GetForegroundWindow();
         [DllImport("user32.dll")] static extern uint GetWindowThreadProcessId(IntPtr h, out uint pid);
         static readonly uint OwnPid = (uint)System.Diagnostics.Process.GetCurrentProcess().Id;
-        const string App = "SimracingBR", Ver = "0.4.0";
+        const string App = "SimracingBR", Ver = "0.5.1";
 
         readonly Settings cfg;
         readonly Tele tele = new Tele();
         readonly GameSources games;
         readonly DemoSource demo = new DemoSource();
+        readonly WheelBaseSource wheelBase = new WheelBaseSource();   // MOZA base temperatures from the Pit House log
         readonly PedalsWindow pedals;
         readonly SectorsWindow sectors;
         readonly FuelWindow fuel;
@@ -291,6 +292,10 @@ namespace SimracingBR
             AddCheck(root, L.T("Clutch (bar and graph line)", "Embreagem (barra e linha do gráfico)"), "ShowClutch", () => v.ShowClutch, x => v.ShowClutch = x, after);
             AddCheck(root, L.T("ABS / TC levels and activity", "Níveis e atuação de ABS / TC"), "ShowAids", () => v.ShowAids, x => v.ShowAids = x, after);
             AddCheck(root, L.T("Brake bias (when the game publishes it)", "Balança de freio (quando o jogo publica)"), "ShowBias", () => v.ShowBias, x => v.ShowBias = x, after);
+
+            AddSection(root, L.T("WHEELBASE", "BASE DO VOLANTE"));
+            AddCheck(root, L.T("Force feedback bar (red when clipping)", "Barra de force feedback (vermelha no clip)"), "ShowFfb", () => v.ShowFfb, x => v.ShowFfb = x, after);
+            AddCheck(root, L.T("Base motor temperature (MOZA, with Pit House open)", "Temperatura do motor da base (MOZA, com o Pit House aberto)"), "ShowBaseTemp", () => v.ShowBaseTemp, x => v.ShowBaseTemp = x, after);
 
             AddSection(root, L.T("DASH", "PAINEL"));
             AddCheck(root, L.T("Gear", "Marcha"), "ShowGear", () => v.ShowGear, x => v.ShowGear = x, after);
@@ -575,6 +580,13 @@ namespace SimracingBR
             tray.Text = App;
             try
             {
+                // the icon embedded in the exe (assets\icon.ico, see build.ps1), at the tray's size
+                using (SD.Icon big = SD.Icon.ExtractAssociatedIcon(System.Reflection.Assembly.GetEntryAssembly().Location))
+                    tray.Icon = new SD.Icon(big, WF.SystemInformation.SmallIconSize);
+            }
+            catch { tray.Icon = null; }
+            if (tray.Icon == null) try
+            {
                 var bmp = new SD.Bitmap(32, 32);
                 using (var g = SD.Graphics.FromImage(bmp))
                 {
@@ -656,8 +668,9 @@ namespace SimracingBR
                 bool ok = games.Read(t);
                 if (!ok || !t.Live)
                 {
-                    t.Gas = t.Brake = t.Clutch = 0; t.AbsOn = t.TcOn = t.ShiftUp = false;
+                    t.Gas = t.Brake = t.Clutch = 0; t.AbsOn = t.TcOn = t.ShiftUp = false; t.FfbOut = float.NaN;
                 }
+                wheelBase.Read(t);
                 if (games.Active != lastSource) SourceChanged(games.Active);
             }
             pedals.Tick(t, preview || t.HasTcCut, fuel.RaceFuel);

@@ -10,11 +10,13 @@ namespace SimracingBR
     public class PedalsWindow : OverlayWindow
     {
         public static readonly string[] FlagKeys = { "ShowGraph", "ShowBars", "ShowClutch", "ShowAids", "ShowGear", "ShowSpeed",
-            "ShowShiftLights", "ShowWheel", "ShowFuel", "ShowFuelPerLap", "ShowLapsLeft", "ShowRaceFuel", "ShowBias" };
+            "ShowShiftLights", "ShowWheel", "ShowFuel", "ShowFuelPerLap", "ShowLapsLeft", "ShowRaceFuel", "ShowBias",
+            "ShowFfb", "ShowBaseTemp" };
 
         public readonly HudView View;
         // fuel-per-lap fallback for games that don't publish it
         int prevLapMs; float lapStartFuel; double measuredPerLap;
+        DateTime clipUntil = DateTime.MinValue;
 
         PedalsWindow(Settings s, HudView view) : base(s, "", "PedalsEnabled", L.T("Pedals", "Pedais"), view, 40) { View = view; }
 
@@ -55,6 +57,7 @@ namespace SimracingBR
             View.ShowShiftLights = cfg.Bool("ShowShiftLights", true); View.ShowWheel = cfg.Bool("ShowWheel", true);
             View.ShowFuel = cfg.Bool("ShowFuel", true); View.ShowFuelPerLap = cfg.Bool("ShowFuelPerLap", true);
             View.ShowLapsLeft = cfg.Bool("ShowLapsLeft", true); View.ShowRaceFuel = cfg.Bool("ShowRaceFuel", true);
+            View.ShowFfb = cfg.Bool("ShowFfb", true); View.ShowBaseTemp = cfg.Bool("ShowBaseTemp", true);
             View.Relayout();
         }
 
@@ -81,8 +84,11 @@ namespace SimracingBR
         {
             View.RaceFuel = raceFuel;             // from the fuel overlay's model, so both show the same suggestion
             bool bias = t.BrakeBias > 0.2f;
-            if (tcc != View.HasTcc || bias != View.HasBias) { View.HasTcc = tcc; View.HasBias = bias; LayoutChanged(); }
+            bool ffb = !float.IsNaN(t.FfbOut), wb = t.BaseMotorC > 0;
+            if (tcc != View.HasTcc || bias != View.HasBias || ffb != View.HasFfb || wb != View.HasBase)
+            { View.HasTcc = tcc; View.HasBias = bias; View.HasFfb = ffb; View.HasBase = wb; LayoutChanged(); }
             UpdateFuel(t);
+            UpdateFfb(t);
             View.AbsDuty += ((t.AbsOn ? 1.0 : 0.0) - View.AbsDuty) * 0.04;
             View.TcDuty += ((t.TcOn ? 1.0 : 0.0) - View.TcDuty) * 0.04;
             View.Push();
@@ -91,6 +97,17 @@ namespace SimracingBR
 
         // Another game took over: forget what we learned about the previous one.
         public void SourceChanged() { prevLapMs = 0; lapStartFuel = 0; measuredPerLap = 0; }
+
+        // FFB level 0..1+ (1 = full scale, clipping above): the force feedback the game sends, read 60 times a second
+        void UpdateFfb(Tele t)
+        {
+            double level = float.IsNaN(t.FfbOut) ? 0 : Math.Abs(t.FfbOut);
+            View.FfbLevel = level;
+            bool clip = level >= 0.985;
+            if (clip) clipUntil = DateTime.UtcNow.AddMilliseconds(600);     // hold the red long enough to be seen
+            View.Clipping = DateTime.UtcNow < clipUntil;
+            View.MotorTemp = t.BaseMotorC;
+        }
 
         void UpdateFuel(Tele t)
         {

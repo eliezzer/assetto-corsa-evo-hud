@@ -6,7 +6,7 @@ A set of telemetry overlays for sim racing games, drawn over the game (windowed 
 
 | Overlay | What it shows | Default |
 |---|---|---|
-| **Pedals** | Pedal input graph and bars (clutch, brake, throttle) that highlight when ABS/TC cut in, ABS / TC / TCC levels, brake bias, gear, speed, shift lights, a rotating steering wheel, fuel row | on |
+| **Pedals** | Pedal input graph and bars (clutch, brake, throttle) that highlight when ABS/TC cut in, ABS / TC / TCC levels, brake bias, gear, speed, shift lights, a rotating steering wheel, fuel row, **force feedback bar that turns red when clipping**, MOZA wheelbase temperature | on |
 | **Sectors** (BETA) | Current / best / last lap, the leader's best lap, your position and lap, and S1 / S2 / S3 split into sub-sectors colored purple / green / gray, like the CMRT app of Assetto Corsa 1 | on |
 | **Fuel** (BETA) | Fuel in the tank, consumption per lap, laps left, and the **suggested fuel for the whole race** | off |
 | **Electronics** | ABS / TC / TCC / ESC chips, brake bias, engine map, differential, hybrid battery, virtual energy, DRS | off |
@@ -29,9 +29,9 @@ The app detects which game is running by itself. No SimHub and nothing to instal
 A ready-to-run build for Windows (nothing to install: it only needs the .NET Framework that ships with Windows). Download the zip from a release, extract it and run `SimracingBR.exe`, keeping the `assets` folder next to it.
 
 - [SimracingBR-overlay releases](https://github.com/eliezzer/SimracingBR-overlay/releases) (v0.2.0)
-- [assetto-corsa-evo-hud releases](https://github.com/eliezzer/assetto-corsa-evo-hud/releases) (v2.2.0, the newest: race length shown big on the fuel overlay, position and lap on the sectors overlay)
+- [assetto-corsa-evo-hud releases](https://github.com/eliezzer/assetto-corsa-evo-hud/releases) (v2.3.1, the newest: force feedback clipping bar and MOZA wheelbase temperature on the pedals overlay, new app icon)
 
-SimracingBR-overlay v0.2.0 is the same program as assetto-corsa-evo-hud v2.0.0; v2.1.0 and later are only here for now. The version the program shows in the tray tooltip is its own (0.4.0 for v2.2.0). The program is not code-signed, so Windows may show a SmartScreen warning the first time: choose *More info* → *Run anyway*. You can also build it yourself, see [Build](#build).
+SimracingBR-overlay v0.2.0 is the same program as assetto-corsa-evo-hud v2.0.0; v2.1.0 and later are only here for now. The version the program shows in the tray tooltip is its own (0.5.1 for v2.3.1). The program is not code-signed, so Windows may show a SmartScreen warning the first time: choose *More info* → *Run anyway*. You can also build it yourself, see [Build](#build).
 
 ## Per-game setup
 
@@ -42,7 +42,7 @@ SimracingBR-overlay v0.2.0 is the same program as assetto-corsa-evo-hud v2.0.0; 
 ## Use
 
 1. Run `SimracingBR.exe` (keep the `assets` folder next to it).
-2. A green and yellow "S" icon appears in the system tray. Right-click it for:
+2. The app icon (a steering wheel with a green stripe) appears in the system tray. Right-click it for:
    - **Settings...**: a side menu with one entry per overlay and an on/off switch on its right. Click a name to see that overlay's settings on the right; the pedals overlay is selected by default. Changes apply instantly and the overlays show demo data while the window is open.
    - **Unlock / Lock position**: unlock to drag the overlays (also `Ctrl+Shift+L`, or double-click the tray icon). You can also hover the mouse over an overlay and click the **UNLOCK** / **LOCK** button in its top-right corner.
    - **Overlays**, **Size**, **Reset positions**, **Demo mode**, **Hide when not driving**, **Quit**.
@@ -53,6 +53,11 @@ Every overlay has its own position, size and transparency. BETA means it works b
 ## Pedals overlay
 
 Pedal graph and bars, ABS / TC / TCC chips (they light up while the aid cuts in), a **BB** chip with the brake bias, gear, speed, shift lights, steering wheel and a fuel row. In Settings choose what is shown, size, overall transparency and background transparency (the background can go almost invisible while the pedals stay solid). The **TCC** chip only shows for games and cars that have that setting, and the **BB** chip only when the game publishes the brake bias.
+
+**Wheelbase** (Settings > WHEELBASE):
+
+- **Force feedback bar**, next to the pedal bars: how much of the wheel's range the game's force feedback is using, read 60 times a second. It turns **red while the signal is at full scale** (clipping), and its **top cap stays lit for 0.6 s after a clip**, so a short clip is still seen even when the bar is already back down. AC EVO and ACC publish it (`finalFF`); other games don't show the bar.
+- **BASE TEMP**: the motor temperature of a **MOZA** wheelbase, in the fuel row. MOZA Pit House owns the base's serial port, so the overlay reads the log Pit House writes every 30 s while it runs (`%LOCALAPPDATA%\MOZA Pit House\Motor_Temprature_Log.log`: controller, MOSFET and motor stator). It only shows while Pit House is open and logging (an entry less than 2 minutes old). Nothing to install and nothing is sent to the base.
 
 ## Sectors overlay (BETA)
 
@@ -99,6 +104,7 @@ ABS / TC / TCC / ESC chips that light up while the aid acts, plus brake bias, en
 | TCC, ESC level | ✓ | TCC | – | TCC when the car has it |
 | ABS active / TC active | ✓ / ✓ | ✓ / ✓ | ✓ / – | ✓ / ✓ |
 | Brake bias | ✓ | ✓ | ✓ | ✓ |
+| Force feedback output (clipping) | ✓ | ✓ | – | – |
 | Engine map | – | ✓ | – | ✓ |
 | Differential | ✓ | – | – | – |
 | Battery / virtual energy | battery (if the car has KERS) | – | – | ✓ / ✓ |
@@ -140,7 +146,7 @@ AC EVO publishes the player's data in shared memory but nothing about the other 
 | `ColorAbs` / `ColorTc` | orange / yellow | Color while ABS/TC cut in |
 | `ColorShiftA` / `ColorShiftB` | red / dark | Shift-point flash |
 | `ColorStripe` | `#E10600` (red) | Stripe on the left of every overlay (also in **Settings** > Appearance) |
-| `ShowGraph`, `ShowBars`, `ShowClutch`, `ShowAids`, `ShowBias`, `ShowGear`, `ShowSpeed`, `ShowShiftLights`, `ShowWheel`, `ShowFuel`, `ShowFuelPerLap`, `ShowLapsLeft` | `1` | Show or hide each part of the pedals overlay |
+| `ShowGraph`, `ShowBars`, `ShowClutch`, `ShowAids`, `ShowBias`, `ShowGear`, `ShowSpeed`, `ShowShiftLights`, `ShowWheel`, `ShowFuel`, `ShowFuelPerLap`, `ShowLapsLeft`, `ShowRaceFuel`, `ShowFfb`, `ShowBaseTemp` | `1` | Show or hide each part of the pedals overlay |
 | `AidColors` | `1` | Recolor the pedals while ABS / TC cut in |
 | `AutoHide`, `HideInPitBox`, `HideWhenGameNotFocused` | `1` | Hide rules of the track overlays |
 | `SectorsSubs` | `8` | Sub-sectors per sector, 1 to 12 |
@@ -161,7 +167,7 @@ The file also keeps what the app learns: `FuelBest_*` and `FuelPer_*` (fastest v
 powershell -ExecutionPolicy Bypass -File build.ps1
 ```
 
-Produces `dist\SimracingBR.exe` (+ `dist\assets`).
+Produces `dist\SimracingBR.exe` (+ `dist\assets`), with the app icon (`assets\icon.ico`) embedded. `build.ps1 -Release 2.3.0` also packs `dist\SimracingBR-v2.3.0-windows.zip`, the file attached to a GitHub release. The icon is drawn by `tools\make-icon.ps1`.
 
 ## Diagnostics
 
@@ -184,6 +190,7 @@ src/Sources/AccSource.cs       Assetto Corsa Competizione
 src/Sources/Ams2Source.cs      Automobilista 2
 src/Sources/LmuSource.cs       Le Mans Ultimate
 src/Sources/GameSources.cs     game auto-detection + demo data
+src/Sources/WheelBaseSource.cs MOZA wheelbase temperatures (from the Pit House log)
 src/UI/OverlayApp.cs           tray, hotkeys, Settings window, which overlay shows when
 src/UI/OverlayWindow.cs        base of every overlay window (lock, drag, resize, click-through)
 src/UI/Chrome.cs               look shared by the overlays
